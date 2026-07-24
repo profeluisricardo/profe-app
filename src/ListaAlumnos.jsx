@@ -22,9 +22,10 @@ export default function ListaAlumnos({ grupoSeleccionado, onCambiarGrupo, onVolv
   const [subiendoFotoId, setSubiendoFotoId] = useState(null)
   const [alumnoSeleccionadoModal, setAlumnoSeleccionadoModal] = useState(null)
 
-  // Estados para Asistencias
+  // Estados para Asistencias y Materiales
   const [fechaAsistencia, setFechaAsistencia] = useState(new Date().toISOString().split('T')[0])
   const [asistenciasDia, setAsistenciasDia] = useState({})
+  const [materialesDia, setMaterialesDia] = useState({}) // NUEVO: Estado para flauta y materiales
   const [historialAsistencias, setHistorialAsistencias] = useState({})
   const [verCompletadosAsistencia, setVerCompletadosAsistencia] = useState(false)
 
@@ -38,6 +39,7 @@ export default function ListaAlumnos({ grupoSeleccionado, onCambiarGrupo, onVolv
   useEffect(() => {
     if (vistaSecundaria === 'asistencias' && grupoSeleccionado) {
       cargarAsistenciasDia(fechaAsistencia)
+      cargarMaterialesDia(fechaAsistencia) // NUEVO: Cargar materiales del día
       cargarHistorialAsistencias()
     }
   }, [fechaAsistencia, alumnos, vistaSecundaria, grupoSeleccionado])
@@ -92,6 +94,26 @@ export default function ListaAlumnos({ grupoSeleccionado, onCambiarGrupo, onVolv
     }
   }
 
+  // NUEVO: Lógica para cargar materiales del día
+  const cargarMaterialesDia = async (fecha) => {
+    const alumnoIds = alumnos.map(a => a.id)
+    if (alumnoIds.length === 0) return
+
+    const { data, error } = await supabase
+      .from('materiales_asistencia')
+      .select('*')
+      .eq('fecha', fecha)
+      .in('alumno_id', alumnoIds)
+
+    if (!error && data) {
+      const mapa = {}
+      data.forEach(item => {
+        mapa[item.alumno_id] = { flauta: item.flauta, cuaderno: item.cuaderno }
+      })
+      setMaterialesDia(mapa)
+    }
+  }
+
   const cargarHistorialAsistencias = async () => {
     const alumnoIds = alumnos.map(a => a.id)
     if (alumnoIds.length === 0) return
@@ -138,6 +160,39 @@ export default function ListaAlumnos({ grupoSeleccionado, onCambiarGrupo, onVolv
     setTimeout(() => {
       cargarHistorialAsistencias()
     }, 250)
+  }
+
+  // NUEVO: Función para alternar estatus de materiales / flauta
+  const cambiarMaterial = async (alumnoId, tipoMaterial) => {
+    const actualMat = materialesDia[alumnoId] || { flauta: false, cuaderno: false }
+    const nuevoValor = !actualMat[tipoMaterial]
+    
+    const actualizado = { ...actualMat, [tipoMaterial]: nuevoValor }
+    setMaterialesDia(prev => ({ ...prev, [alumnoId]: actualizado }))
+
+    const { data: existente } = await supabase
+      .from('materiales_asistencia')
+      .select('id')
+      .eq('alumno_id', alumnoId)
+      .eq('fecha', fechaAsistencia)
+      .maybeSingle()
+
+    if (existente) {
+      await supabase
+        .from('materiales_asistencia')
+        .update({ [tipoMaterial]: nuevoValor })
+        .eq('id', existente.id)
+    } else {
+      await supabase
+        .from('materiales_asistencia')
+        .insert([{ 
+          alumno_id: alumnoId, 
+          grupo_id: grupoSeleccionado.id, 
+          fecha: fechaAsistencia, 
+          flauta: tipoMaterial === 'flauta' ? nuevoValor : false,
+          cuaderno: tipoMaterial === 'cuaderno' ? nuevoValor : false
+        }])
+    }
   }
 
   const agregarAlumno = async (e) => {
@@ -512,7 +567,7 @@ export default function ListaAlumnos({ grupoSeleccionado, onCambiarGrupo, onVolv
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem', background: '#f1f5f9', padding: '0.75rem', borderRadius: '8px' }}>
         <button onClick={onVolver} style={{ padding: '0.4rem 0.8rem', background: '#cbd5e1', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem' }}>
-          ← Menú Principal
+           Menú Principal
         </button>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -534,13 +589,13 @@ export default function ListaAlumnos({ grupoSeleccionado, onCambiarGrupo, onVolv
         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
           <BotonInstalar />
           <button onClick={() => setVistaSecundaria('asistencias')} style={{ padding: '0.4rem 0.8rem', background: '#10b981', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem' }}>
-            📅 Asistencias
+             Asistencias
           </button>
           <button onClick={() => setVistaSecundaria('tareas')} style={{ padding: '0.4rem 0.8rem', background: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem' }}>
-            📚 Tareas
+             Tareas
           </button>
           <button onClick={() => setVistaSecundaria('calendario')} style={{ padding: '0.4rem 0.8rem', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem' }}>
-            🗓️ Calendario
+             Calendario
           </button>
         </div>
       </div>
@@ -549,7 +604,7 @@ export default function ListaAlumnos({ grupoSeleccionado, onCambiarGrupo, onVolv
       {vistaSecundaria === 'asistencias' ? (
         <div style={{ background: 'white', padding: '1rem', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', marginBottom: '1.5rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-            <h2 style={{ margin: 0, fontSize: '1.2rem', color: '#1e293b' }}>Control de Asistencias - {grupoSeleccionado.nombre}</h2>
+            <h2 style={{ margin: 0, fontSize: '1.2rem', color: '#1e293b' }}>Control de Asistencia y Materiales - {grupoSeleccionado.nombre}</h2>
             <input 
               type="date" 
               value={fechaAsistencia} 
@@ -577,9 +632,9 @@ export default function ListaAlumnos({ grupoSeleccionado, onCambiarGrupo, onVolv
             <p style={{ color: '#64748b', fontStyle: 'italic', fontSize: '0.9rem' }}>No hay alumnos registrados en este grupo.</p>
           ) : alumnosPendientes.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '2rem 1rem', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0', marginBottom: '1rem' }}>
-              <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🎉</div>
+              <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}></div>
               <h3 style={{ margin: '0 0 0.3rem 0', color: '#166534', fontSize: '1.1rem' }}>¡Lista completada para este día!</h3>
-              <p style={{ margin: 0, color: '#15803d', fontSize: '0.85rem' }}>Has registrado la asistencia de todos los alumnos.</p>
+              <p style={{ margin: 0, color: '#15803d', fontSize: '0.85rem' }}>Has registrado la asistencia y materiales de todos los alumnos.</p>
             </div>
           ) : (
             <div style={{ overflowX: 'auto', marginBottom: '1.5rem' }}>
@@ -589,11 +644,13 @@ export default function ListaAlumnos({ grupoSeleccionado, onCambiarGrupo, onVolv
                     <th style={{ padding: '0.6rem' }}>Foto</th>
                     <th style={{ padding: '0.6rem' }}>Alumno</th>
                     <th style={{ padding: '0.6rem', textAlign: 'center' }}>Estatus de Asistencia</th>
+                    <th style={{ padding: '0.6rem', textAlign: 'center' }}>Materiales / Flauta</th>
                   </tr>
                 </thead>
                 <tbody>
                   {alumnosPendientes.map((alumno) => {
                     const estatus = asistenciasDia[alumno.id] || 'asistencia'
+                    const materialesAlu = materialesDia[alumno.id] || { flauta: false, cuaderno: false }
                     const historialAlu = historialAsistencias[alumno.id] || []
                     return (
                       <tr key={alumno.id} style={{ borderBottom: '1px solid #e2e8f0', fontSize: '0.85rem' }}>
@@ -706,6 +763,43 @@ export default function ListaAlumnos({ grupoSeleccionado, onCambiarGrupo, onVolv
                             </button>
                           </div>
                         </td>
+                        {/* NUEVO: Botones para Flauta y Materiales */}
+                        <td style={{ padding: '0.6rem', textAlign: 'center' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', width: '100%', maxWidth: '120px', margin: '0 auto' }}>
+                            <button 
+                              onClick={() => cambiarMaterial(alumno.id, 'flauta')}
+                              style={{
+                                padding: '0.4rem 0.5rem',
+                                borderRadius: '4px',
+                                border: 'none',
+                                fontWeight: 'bold',
+                                fontSize: '0.75rem',
+                                cursor: 'pointer',
+                                width: '100%',
+                                background: materialesAlu.flauta ? '#8b5cf6' : '#f1f5f9',
+                                color: materialesAlu.flauta ? 'white' : '#64748b'
+                              }}
+                            >
+                              {materialesAlu.flauta ? '🎵 Flauta: SÍ' : '🎵 Flauta: NO'}
+                            </button>
+                            <button 
+                              onClick={() => cambiarMaterial(alumno.id, 'cuaderno')}
+                              style={{
+                                padding: '0.4rem 0.5rem',
+                                borderRadius: '4px',
+                                border: 'none',
+                                fontWeight: 'bold',
+                                fontSize: '0.75rem',
+                                cursor: 'pointer',
+                                width: '100%',
+                                background: materialesAlu.cuaderno ? '#0ea5e9' : '#f1f5f9',
+                                color: materialesAlu.cuaderno ? 'white' : '#64748b'
+                              }}
+                            >
+                              {materialesAlu.cuaderno ? '📖 Material: SÍ' : '📖 Material: NO'}
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     )
                   })}
@@ -725,11 +819,13 @@ export default function ListaAlumnos({ grupoSeleccionado, onCambiarGrupo, onVolv
                       <th style={{ padding: '0.6rem' }}>Foto</th>
                       <th style={{ padding: '0.6rem' }}>Alumno</th>
                       <th style={{ padding: '0.6rem', textAlign: 'center' }}>Cambiar Estatus</th>
+                      <th style={{ padding: '0.6rem', textAlign: 'center' }}>Materiales / Flauta</th>
                     </tr>
                   </thead>
                   <tbody>
                     {alumnosCompletados.map((alumno) => {
                       const estatus = asistenciasDia[alumno.id]
+                      const materialesAlu = materialesDia[alumno.id] || { flauta: false, cuaderno: false }
                       const historialAlu = historialAsistencias[alumno.id] || []
                       return (
                         <tr key={alumno.id} style={{ borderBottom: '1px solid #e2e8f0', fontSize: '0.85rem', background: '#fafaf9' }}>
@@ -838,6 +934,43 @@ export default function ListaAlumnos({ grupoSeleccionado, onCambiarGrupo, onVolv
                               </button>
                             </div>
                           </td>
+                          {/* NUEVO: Botones para Flauta y Materiales en alumnos ya pasados */}
+                          <td style={{ padding: '0.6rem', textAlign: 'center' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', width: '100%', maxWidth: '120px', margin: '0 auto' }}>
+                              <button 
+                                onClick={() => cambiarMaterial(alumno.id, 'flauta')}
+                                style={{
+                                  padding: '0.4rem 0.5rem',
+                                  borderRadius: '4px',
+                                  border: 'none',
+                                  fontWeight: 'bold',
+                                  fontSize: '0.75rem',
+                                  cursor: 'pointer',
+                                  width: '100%',
+                                  background: materialesAlu.flauta ? '#8b5cf6' : '#f1f5f9',
+                                  color: materialesAlu.flauta ? 'white' : '#64748b'
+                                }}
+                              >
+                                {materialesAlu.flauta ? '🎵 Flauta: SÍ' : '🎵 Flauta: NO'}
+                              </button>
+                              <button 
+                                onClick={() => cambiarMaterial(alumno.id, 'cuaderno')}
+                                style={{
+                                  padding: '0.4rem 0.5rem',
+                                  borderRadius: '4px',
+                                  border: 'none',
+                                  fontWeight: 'bold',
+                                  fontSize: '0.75rem',
+                                  cursor: 'pointer',
+                                  width: '100%',
+                                  background: materialesAlu.cuaderno ? '#0ea5e9' : '#f1f5f9',
+                                  color: materialesAlu.cuaderno ? 'white' : '#64748b'
+                                }}
+                              >
+                                {materialesAlu.cuaderno ? '📖 Material: SÍ' : '📖 Material: NO'}
+                              </button>
+                            </div>
+                          </td>
                         </tr>
                       )
                     })}
@@ -855,11 +988,11 @@ export default function ListaAlumnos({ grupoSeleccionado, onCambiarGrupo, onVolv
             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
               {alumnos.length > 0 && (
                 <button onClick={descargarReporteGrupoPDF} style={{ padding: '0.4rem 0.8rem', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem' }}>
-                  📊 Reporte PDF Grupo
+                   Reporte PDF Grupo
                 </button>
               )}
               <button onClick={() => setModoImportacion(!modoImportacion)} style={{ padding: '0.4rem 0.8rem', background: modoImportacion ? '#64748b' : '#2563eb', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem' }}>
-                {modoImportacion ? 'Registro Manual' : '📥 Importar Masivo'}
+                {modoImportacion ? 'Registro Manual' : ' Importar Masivo'}
               </button>
             </div>
           </div>
@@ -923,7 +1056,7 @@ export default function ListaAlumnos({ grupoSeleccionado, onCambiarGrupo, onVolv
                             <div style={{ fontWeight: '500' }}>{alumno.nombre_tutor}</div>
                             {alumno.whatsapp_tutor && (
                               <a href={`https://wa.me/52${alumno.whatsapp_tutor.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: '0.2rem', color: '#16a34a', fontWeight: 'bold', textDecoration: 'none' }}>
-                                💬 {alumno.whatsapp_tutor}
+                                 {alumno.whatsapp_tutor}
                               </a>
                             )}
                           </>
@@ -933,7 +1066,7 @@ export default function ListaAlumnos({ grupoSeleccionado, onCambiarGrupo, onVolv
                       </td>
                       <td style={{ padding: '0.5rem', textAlign: 'center' }}>
                         <label style={{ display: 'inline-block', padding: '0.4rem', background: subiendoFotoId === alumno.id ? '#94a3b8' : '#0ea5e9', color: 'white', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}>
-                          {subiendoFotoId === alumno.id ? '...' : '📸'}
+                          {subiendoFotoId === alumno.id ? '...' : ''}
                           <input type="file" accept="image/*" capture="environment" onChange={(e) => manejarCapturaFoto(e, alumno.id)} style={{ display: 'none' }} />
                         </label>
                       </td>
@@ -965,18 +1098,18 @@ export default function ListaAlumnos({ grupoSeleccionado, onCambiarGrupo, onVolv
               <div style={{ marginTop: '0.3rem' }}><strong>Tutor:</strong> {alumnoSeleccionadoModal.nombre_tutor || 'N/A'}</div>
               {alumnoSeleccionadoModal.whatsapp_tutor && (
                 <div style={{ marginTop: '0.3rem' }}>
-                  <strong>WhatsApp:</strong> <a href={`https://wa.me/52${alumnoSeleccionadoModal.whatsapp_tutor.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" style={{ color: '#16a34a', fontWeight: 'bold', textDecoration: 'none' }}>💬 Abrir Chat</a>
+                  <strong>WhatsApp:</strong> <a href={`https://wa.me/52${alumnoSeleccionadoModal.whatsapp_tutor.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" style={{ color: '#16a34a', fontWeight: 'bold', textDecoration: 'none' }}> Abrir Chat</a>
                 </div>
               )}
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <button onClick={() => descargarReportePDF(alumnoSeleccionadoModal)} style={{ padding: '0.6rem', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem' }}>
-                📄 Descargar Reporte PDF
+                 Descargar Reporte PDF
               </button>
               <div style={{ display: 'flex', gap: '0.5rem' }}>
                 <label style={{ flex: 1, padding: '0.6rem', background: '#0ea5e9', color: 'white', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem' }}>
-                  📸 Cambiar
+                   Cambiar
                   <input type="file" accept="image/*" capture="environment" onChange={(e) => manejarCapturaFoto(e, alumnoSeleccionadoModal.id)} style={{ display: 'none' }} />
                 </label>
                 <button onClick={() => setAlumnoSeleccionadoModal(null)} style={{ flex: 1, padding: '0.6rem', background: '#ef4444', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '0.85rem' }}>
