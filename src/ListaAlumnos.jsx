@@ -25,7 +25,7 @@ export default function ListaAlumnos({ grupoSeleccionado, onCambiarGrupo, onVolv
   // Estados para Asistencias y Materiales
   const [fechaAsistencia, setFechaAsistencia] = useState(new Date().toISOString().split('T')[0])
   const [asistenciasDia, setAsistenciasDia] = useState({})
-  const [materialesDia, setMaterialesDia] = useState({}) // NUEVO: Estado para flauta y materiales
+  const [materialesDia, setMaterialesDia] = useState({}) // Estado para los 4 materiales
   const [historialAsistencias, setHistorialAsistencias] = useState({})
   const [verCompletadosAsistencia, setVerCompletadosAsistencia] = useState(false)
 
@@ -39,7 +39,7 @@ export default function ListaAlumnos({ grupoSeleccionado, onCambiarGrupo, onVolv
   useEffect(() => {
     if (vistaSecundaria === 'asistencias' && grupoSeleccionado) {
       cargarAsistenciasDia(fechaAsistencia)
-      cargarMaterialesDia(fechaAsistencia) // NUEVO: Cargar materiales del día
+      cargarMaterialesDia(fechaAsistencia)
       cargarHistorialAsistencias()
     }
   }, [fechaAsistencia, alumnos, vistaSecundaria, grupoSeleccionado])
@@ -74,7 +74,6 @@ export default function ListaAlumnos({ grupoSeleccionado, onCambiarGrupo, onVolv
     else setAlumnos(data || [])
   }
 
-  // Lógica de Asistencias
   const cargarAsistenciasDia = async (fecha) => {
     const alumnoIds = alumnos.map(a => a.id)
     if (alumnoIds.length === 0) return
@@ -94,7 +93,6 @@ export default function ListaAlumnos({ grupoSeleccionado, onCambiarGrupo, onVolv
     }
   }
 
-  // NUEVO: Lógica para cargar materiales del día
   const cargarMaterialesDia = async (fecha) => {
     const alumnoIds = alumnos.map(a => a.id)
     if (alumnoIds.length === 0) return
@@ -108,7 +106,12 @@ export default function ListaAlumnos({ grupoSeleccionado, onCambiarGrupo, onVolv
     if (!error && data) {
       const mapa = {}
       data.forEach(item => {
-        mapa[item.alumno_id] = { flauta: item.flauta, cuaderno: item.cuaderno }
+        mapa[item.alumno_id] = { 
+          flauta: item.flauta, 
+          cuaderno_pautado: item.cuaderno_pautado,
+          libreta: item.libreta,
+          libro_lenguajes: item.libro_lenguajes
+        }
       })
       setMaterialesDia(mapa)
     }
@@ -162,9 +165,8 @@ export default function ListaAlumnos({ grupoSeleccionado, onCambiarGrupo, onVolv
     }, 250)
   }
 
-  // NUEVO: Función para alternar estatus de materiales / flauta
   const cambiarMaterial = async (alumnoId, tipoMaterial) => {
-    const actualMat = materialesDia[alumnoId] || { flauta: false, cuaderno: false }
+    const actualMat = materialesDia[alumnoId] || { flauta: false, cuaderno_pautado: false, libreta: false, libro_lenguajes: false }
     const nuevoValor = !actualMat[tipoMaterial]
     
     const actualizado = { ...actualMat, [tipoMaterial]: nuevoValor }
@@ -190,7 +192,9 @@ export default function ListaAlumnos({ grupoSeleccionado, onCambiarGrupo, onVolv
           grupo_id: grupoSeleccionado.id, 
           fecha: fechaAsistencia, 
           flauta: tipoMaterial === 'flauta' ? nuevoValor : false,
-          cuaderno: tipoMaterial === 'cuaderno' ? nuevoValor : false
+          cuaderno_pautado: tipoMaterial === 'cuaderno_pautado' ? nuevoValor : false,
+          libreta: tipoMaterial === 'libreta' ? nuevoValor : false,
+          libro_lenguajes: tipoMaterial === 'libro_lenguajes' ? nuevoValor : false
         }])
     }
   }
@@ -333,7 +337,6 @@ export default function ListaAlumnos({ grupoSeleccionado, onCambiarGrupo, onVolv
     setSubiendoFotoId(null)
   }
 
-  // Generar Reporte PDF Individual del Alumno
   const descargarReportePDF = async (alumno) => {
     try {
       const { data: tareasData } = await supabase
@@ -436,7 +439,6 @@ export default function ListaAlumnos({ grupoSeleccionado, onCambiarGrupo, onVolv
     }
   }
 
-  // Generar Reporte PDF Consolidado del Grupo
   const descargarReporteGrupoPDF = async () => {
     try {
       const { data: tareasData } = await supabase
@@ -632,25 +634,24 @@ export default function ListaAlumnos({ grupoSeleccionado, onCambiarGrupo, onVolv
             <p style={{ color: '#64748b', fontStyle: 'italic', fontSize: '0.9rem' }}>No hay alumnos registrados en este grupo.</p>
           ) : alumnosPendientes.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '2rem 1rem', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0', marginBottom: '1rem' }}>
-              <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}></div>
               <h3 style={{ margin: '0 0 0.3rem 0', color: '#166534', fontSize: '1.1rem' }}>¡Lista completada para este día!</h3>
               <p style={{ margin: 0, color: '#15803d', fontSize: '0.85rem' }}>Has registrado la asistencia y materiales de todos los alumnos.</p>
             </div>
           ) : (
             <div style={{ overflowX: 'auto', marginBottom: '1.5rem' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '450px' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
                 <thead>
                   <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0', textAlign: 'left', fontSize: '0.85rem' }}>
                     <th style={{ padding: '0.6rem' }}>Foto</th>
                     <th style={{ padding: '0.6rem' }}>Alumno</th>
                     <th style={{ padding: '0.6rem', textAlign: 'center' }}>Estatus de Asistencia</th>
-                    <th style={{ padding: '0.6rem', textAlign: 'center' }}>Materiales / Flauta</th>
+                    <th style={{ padding: '0.6rem', textAlign: 'center' }}>Materiales (4 opc.)</th>
                   </tr>
                 </thead>
                 <tbody>
                   {alumnosPendientes.map((alumno) => {
                     const estatus = asistenciasDia[alumno.id] || 'asistencia'
-                    const materialesAlu = materialesDia[alumno.id] || { flauta: false, cuaderno: false }
+                    const mat = materialesDia[alumno.id] || { flauta: false, cuaderno_pautado: false, libreta: false, libro_lenguajes: false }
                     const historialAlu = historialAsistencias[alumno.id] || []
                     return (
                       <tr key={alumno.id} style={{ borderBottom: '1px solid #e2e8f0', fontSize: '0.85rem' }}>
@@ -664,7 +665,6 @@ export default function ListaAlumnos({ grupoSeleccionado, onCambiarGrupo, onVolv
                         <td style={{ padding: '0.6rem' }}>
                           <div style={{ fontFamily: 'monospace', fontWeight: 'bold', color: '#2563eb', fontSize: '0.75rem' }}>{alumno.id_corto}</div>
                           <div style={{ fontWeight: 'bold' }}>{alumno.nombre_completo}</div>
-                          {/* Historial rápido de asistencia */}
                           <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '4px', alignItems: 'center' }}>
                             <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Últimas:</span>
                             {historialAlu.slice(0, 5).map((reg, idx) => {
@@ -763,40 +763,72 @@ export default function ListaAlumnos({ grupoSeleccionado, onCambiarGrupo, onVolv
                             </button>
                           </div>
                         </td>
-                        {/* NUEVO: Botones para Flauta y Materiales */}
+                        {/* 4 BOTONES DE MATERIALES */}
                         <td style={{ padding: '0.6rem', textAlign: 'center' }}>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', width: '100%', maxWidth: '120px', margin: '0 auto' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', width: '100%', maxWidth: '140px', margin: '0 auto' }}>
                             <button 
                               onClick={() => cambiarMaterial(alumno.id, 'flauta')}
                               style={{
-                                padding: '0.4rem 0.5rem',
+                                padding: '0.3rem 0.4rem',
                                 borderRadius: '4px',
                                 border: 'none',
                                 fontWeight: 'bold',
-                                fontSize: '0.75rem',
+                                fontSize: '0.7rem',
                                 cursor: 'pointer',
                                 width: '100%',
-                                background: materialesAlu.flauta ? '#8b5cf6' : '#f1f5f9',
-                                color: materialesAlu.flauta ? 'white' : '#64748b'
+                                background: mat.flauta ? '#8b5cf6' : '#f1f5f9',
+                                color: mat.flauta ? 'white' : '#64748b'
                               }}
                             >
-                              {materialesAlu.flauta ? '🎵 Flauta: SÍ' : '🎵 Flauta: NO'}
+                              {mat.flauta ? '🎵 Flauta: SÍ' : '🎵 Flauta: NO'}
                             </button>
                             <button 
-                              onClick={() => cambiarMaterial(alumno.id, 'cuaderno')}
+                              onClick={() => cambiarMaterial(alumno.id, 'cuaderno_pautado')}
                               style={{
-                                padding: '0.4rem 0.5rem',
+                                padding: '0.3rem 0.4rem',
                                 borderRadius: '4px',
                                 border: 'none',
                                 fontWeight: 'bold',
-                                fontSize: '0.75rem',
+                                fontSize: '0.7rem',
                                 cursor: 'pointer',
                                 width: '100%',
-                                background: materialesAlu.cuaderno ? '#0ea5e9' : '#f1f5f9',
-                                color: materialesAlu.cuaderno ? 'white' : '#64748b'
+                                background: mat.cuaderno_pautado ? '#0ea5e9' : '#f1f5f9',
+                                color: mat.cuaderno_pautado ? 'white' : '#64748b'
                               }}
                             >
-                              {materialesAlu.cuaderno ? '📖 Material: SÍ' : '📖 Material: NO'}
+                              {mat.cuaderno_pautado ? '📖 C. Pautado: SÍ' : '📖 C. Pautado: NO'}
+                            </button>
+                            <button 
+                              onClick={() => cambiarMaterial(alumno.id, 'libreta')}
+                              style={{
+                                padding: '0.3rem 0.4rem',
+                                borderRadius: '4px',
+                                border: 'none',
+                                fontWeight: 'bold',
+                                fontSize: '0.7rem',
+                                cursor: 'pointer',
+                                width: '100%',
+                                background: mat.libreta ? '#10b981' : '#f1f5f9',
+                                color: mat.libreta ? 'white' : '#64748b'
+                              }}
+                            >
+                              {mat.libreta ? '📓 Libreta: SÍ' : '📓 Libreta: NO'}
+                            </button>
+                            <button 
+                              onClick={() => cambiarMaterial(alumno.id, 'libro_lenguajes')}
+                              style={{
+                                padding: '0.3rem 0.4rem',
+                                borderRadius: '4px',
+                                border: 'none',
+                                fontWeight: 'bold',
+                                fontSize: '0.7rem',
+                                cursor: 'pointer',
+                                width: '100%',
+                                background: mat.libro_lenguajes ? '#f59e0b' : '#f1f5f9',
+                                color: mat.libro_lenguajes ? 'white' : '#64748b'
+                              }}
+                            >
+                              {mat.libro_lenguajes ? '📚 L. Lenguajes: SÍ' : '📚 L. Lenguajes: NO'}
                             </button>
                           </div>
                         </td>
@@ -813,19 +845,19 @@ export default function ListaAlumnos({ grupoSeleccionado, onCambiarGrupo, onVolv
             <div style={{ marginTop: '1.5rem', borderTop: '2px dashed #e2e8f0', paddingTop: '1rem' }}>
               <h3 style={{ fontSize: '1rem', color: '#475569', marginBottom: '0.5rem' }}>Alumnos ya pasados (Puedes corregir si te equivocaste):</h3>
               <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '450px' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '600px' }}>
                   <thead>
                     <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0', textAlign: 'left', fontSize: '0.85rem' }}>
                       <th style={{ padding: '0.6rem' }}>Foto</th>
                       <th style={{ padding: '0.6rem' }}>Alumno</th>
                       <th style={{ padding: '0.6rem', textAlign: 'center' }}>Cambiar Estatus</th>
-                      <th style={{ padding: '0.6rem', textAlign: 'center' }}>Materiales / Flauta</th>
+                      <th style={{ padding: '0.6rem', textAlign: 'center' }}>Materiales (4 opc.)</th>
                     </tr>
                   </thead>
                   <tbody>
                     {alumnosCompletados.map((alumno) => {
                       const estatus = asistenciasDia[alumno.id]
-                      const materialesAlu = materialesDia[alumno.id] || { flauta: false, cuaderno: false }
+                      const mat = materialesDia[alumno.id] || { flauta: false, cuaderno_pautado: false, libreta: false, libro_lenguajes: false }
                       const historialAlu = historialAsistencias[alumno.id] || []
                       return (
                         <tr key={alumno.id} style={{ borderBottom: '1px solid #e2e8f0', fontSize: '0.85rem', background: '#fafaf9' }}>
@@ -839,32 +871,6 @@ export default function ListaAlumnos({ grupoSeleccionado, onCambiarGrupo, onVolv
                           <td style={{ padding: '0.6rem' }}>
                             <div style={{ fontFamily: 'monospace', fontWeight: 'bold', color: '#2563eb', fontSize: '0.75rem' }}>{alumno.id_corto}</div>
                             <div style={{ fontWeight: 'bold' }}>{alumno.nombre_completo}</div>
-                            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '4px', alignItems: 'center' }}>
-                              <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Últimas:</span>
-                              {historialAlu.slice(0, 5).map((reg, idx) => {
-                                const colorBg = 
-                                  reg.estatus === 'asistencia' || reg.estatus === 'presente' ? '#d1fae5' :
-                                  reg.estatus === 'falta' ? '#fee2e2' :
-                                  reg.estatus === 'retardo' ? '#fef3c7' : '#ede9fe';
-                                const colorText = 
-                                  reg.estatus === 'asistencia' || reg.estatus === 'presente' ? '#065f46' :
-                                  reg.estatus === 'falta' ? '#991b1b' :
-                                  reg.estatus === 'retardo' ? '#92400e' : '#5b21b6';
-                                const letra = 
-                                  reg.estatus === 'asistencia' || reg.estatus === 'presente' ? 'A' :
-                                  reg.estatus === 'falta' ? 'F' :
-                                  reg.estatus === 'retardo' ? 'R' : 'J';
-                                
-                                const partesFecha = reg.fecha.split('-');
-                                const fechaCorta = partesFecha.length === 3 ? `${partesFecha[2]}/${partesFecha[1]}` : reg.fecha;
-
-                                return (
-                                  <span key={idx} title={`${reg.fecha}: ${reg.estatus}`} style={{ fontSize: '0.65rem', padding: '1px 4px', borderRadius: '3px', background: colorBg, color: colorText, fontWeight: 'bold' }}>
-                                    {fechaCorta}: {letra}
-                                  </span>
-                                )
-                              })}
-                            </div>
                           </td>
                           <td style={{ padding: '0.6rem', textAlign: 'center' }}>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', width: '100%', maxWidth: '130px', margin: '0 auto' }}>
@@ -934,40 +940,71 @@ export default function ListaAlumnos({ grupoSeleccionado, onCambiarGrupo, onVolv
                               </button>
                             </div>
                           </td>
-                          {/* NUEVO: Botones para Flauta y Materiales en alumnos ya pasados */}
                           <td style={{ padding: '0.6rem', textAlign: 'center' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', width: '100%', maxWidth: '120px', margin: '0 auto' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', width: '100%', maxWidth: '140px', margin: '0 auto' }}>
                               <button 
                                 onClick={() => cambiarMaterial(alumno.id, 'flauta')}
                                 style={{
-                                  padding: '0.4rem 0.5rem',
+                                  padding: '0.3rem 0.4rem',
                                   borderRadius: '4px',
                                   border: 'none',
                                   fontWeight: 'bold',
-                                  fontSize: '0.75rem',
+                                  fontSize: '0.7rem',
                                   cursor: 'pointer',
                                   width: '100%',
-                                  background: materialesAlu.flauta ? '#8b5cf6' : '#f1f5f9',
-                                  color: materialesAlu.flauta ? 'white' : '#64748b'
+                                  background: mat.flauta ? '#8b5cf6' : '#f1f5f9',
+                                  color: mat.flauta ? 'white' : '#64748b'
                                 }}
                               >
-                                {materialesAlu.flauta ? '🎵 Flauta: SÍ' : '🎵 Flauta: NO'}
+                                {mat.flauta ? '🎵 Flauta: SÍ' : '🎵 Flauta: NO'}
                               </button>
                               <button 
-                                onClick={() => cambiarMaterial(alumno.id, 'cuaderno')}
+                                onClick={() => cambiarMaterial(alumno.id, 'cuaderno_pautado')}
                                 style={{
-                                  padding: '0.4rem 0.5rem',
+                                  padding: '0.3rem 0.4rem',
                                   borderRadius: '4px',
                                   border: 'none',
                                   fontWeight: 'bold',
-                                  fontSize: '0.75rem',
+                                  fontSize: '0.7rem',
                                   cursor: 'pointer',
                                   width: '100%',
-                                  background: materialesAlu.cuaderno ? '#0ea5e9' : '#f1f5f9',
-                                  color: materialesAlu.cuaderno ? 'white' : '#64748b'
+                                  background: mat.cuaderno_pautado ? '#0ea5e9' : '#f1f5f9',
+                                  color: mat.cuaderno_pautado ? 'white' : '#64748b'
                                 }}
                               >
-                                {materialesAlu.cuaderno ? '📖 Material: SÍ' : '📖 Material: NO'}
+                                {mat.cuaderno_pautado ? '📖 C. Pautado: SÍ' : '📖 C. Pautado: NO'}
+                              </button>
+                              <button 
+                                onClick={() => cambiarMaterial(alumno.id, 'libreta')}
+                                style={{
+                                  padding: '0.3rem 0.4rem',
+                                  borderRadius: '4px',
+                                  border: 'none',
+                                  fontWeight: 'bold',
+                                  fontSize: '0.7rem',
+                                  cursor: 'pointer',
+                                  width: '100%',
+                                  background: mat.libreta ? '#10b981' : '#f1f5f9',
+                                  color: mat.libreta ? 'white' : '#64748b'
+                                }}
+                              >
+                                {mat.libreta ? '📓 Libreta: SÍ' : '📓 Libreta: NO'}
+                              </button>
+                              <button 
+                                onClick={() => cambiarMaterial(alumno.id, 'libro_lenguajes')}
+                                style={{
+                                  padding: '0.3rem 0.4rem',
+                                  borderRadius: '4px',
+                                  border: 'none',
+                                  fontWeight: 'bold',
+                                  fontSize: '0.7rem',
+                                  cursor: 'pointer',
+                                  width: '100%',
+                                  background: mat.libro_lenguajes ? '#f59e0b' : '#f1f5f9',
+                                  color: mat.libro_lenguajes ? 'white' : '#64748b'
+                                }}
+                              >
+                                {mat.libro_lenguajes ? '📚 L. Lenguajes: SÍ' : '📚 L. Lenguajes: NO'}
                               </button>
                             </div>
                           </td>
