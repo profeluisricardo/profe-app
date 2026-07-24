@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# PWA Dev output (Agregado para limpiar archivos temporales)
+dev-dist/
