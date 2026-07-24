@@ -10,13 +10,14 @@ export default function SeccionAsistencias({
   verCompletadosAsistencia,
   setVerCompletadosAsistencia,
   cambiarAsistencia,
+  cambiarMaterial,
   setAlumnoSeleccionadoModal
 }) {
   return (
     <div style={{ background: 'white', padding: '1rem', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', marginBottom: '1.5rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.75rem' }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: '1.2rem', color: '#1e293b' }}>Control de Asistencia</h2>
+          <h2 style={{ margin: 0, fontSize: '1.2rem', color: '#1e293b' }}>Control de Asistencia y Materiales</h2>
           <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.85rem', color: '#64748b' }}>Grupo: {grupoSeleccionado.nombre}</p>
         </div>
         
@@ -71,12 +72,14 @@ export default function SeccionAsistencias({
                   <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0', textAlign: 'left', fontSize: '0.85rem' }}>
                     <th style={{ padding: '0.5rem' }}>Foto</th>
                     <th style={{ padding: '0.5rem' }}>Alumno</th>
-                    <th style={{ padding: '0.5rem', textAlign: 'center' }}>Estatus de Asistencia</th>
+                    <th style={{ padding: '0.5rem', textAlign: 'center' }}>Estatus y Materiales</th>
                   </tr>
                 </thead>
                 <tbody>
                   {(!verCompletadosAsistencia ? alumnosPendientes : alumnosCompletados).map((alumno) => {
-                    const estatusActual = asistenciasDia[alumno.id]
+                    const registroAlumno = asistenciasDia[alumno.id] || {}
+                    const estatusActual = registroAlumno.estatus || registroAlumno.asistencia // Soporta compatibilidad si guardas string o objeto
+                    
                     return (
                       <tr key={alumno.id} style={{ borderBottom: '1px solid #e2e8f0', fontSize: '0.85rem' }}>
                         <td style={{ padding: '0.5rem' }}>
@@ -91,7 +94,8 @@ export default function SeccionAsistencias({
                           <div style={{ fontWeight: 'bold' }}>{alumno.nombre_completo}</div>
                         </td>
                         <td style={{ padding: '0.5rem', textAlign: 'center' }}>
-                          <div style={{ display: 'flex', justifyContent: 'center', gap: '0.3rem', flexWrap: 'wrap' }}>
+                          {/* Botones de Asistencia */}
+                          <div style={{ display: 'flex', justifyContent: 'center', gap: '0.3rem', flexWrap: 'wrap', marginBottom: '0.4rem' }}>
                             <button 
                               onClick={() => cambiarAsistencia(alumno.id, 'asistencia')}
                               style={{ 
@@ -135,6 +139,58 @@ export default function SeccionAsistencias({
                               }}
                             >
                               Justificante
+                            </button>
+                          </div>
+
+                          {/* Botones de Materiales */}
+                          <div style={{ display: 'flex', justifyContent: 'center', gap: '0.3rem', flexWrap: 'wrap', borderTop: '1px dashed #e2e8f0', paddingTop: '0.3rem' }}>
+                            <button 
+                              onClick={() => cambiarMaterial && cambiarMaterial(alumno.id, 'flauta')}
+                              style={{ 
+                                padding: '0.2rem 0.5rem', 
+                                background: registroAlumno.flauta ? '#0284c7' : '#f8fafc', 
+                                color: registroAlumno.flauta ? 'white' : '#64748b', 
+                                border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 'bold' 
+                              }}
+                              title="Flauta"
+                            >
+                              🎵 Flauta
+                            </button>
+                            <button 
+                              onClick={() => cambiarMaterial && cambiarMaterial(alumno.id, 'cuaderno_pautado')}
+                              style={{ 
+                                padding: '0.2rem 0.5rem', 
+                                background: registroAlumno.cuaderno_pautado ? '#0284c7' : '#f8fafc', 
+                                color: registroAlumno.cuaderno_pautado ? 'white' : '#64748b', 
+                                border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 'bold' 
+                              }}
+                              title="Cuaderno Pautado"
+                            >
+                              🎼 C. Pautado
+                            </button>
+                            <button 
+                              onClick={() => cambiarMaterial && cambiarMaterial(alumno.id, 'libreta_artes')}
+                              style={{ 
+                                padding: '0.2rem 0.5rem', 
+                                background: registroAlumno.libreta_artes ? '#0284c7' : '#f8fafc', 
+                                color: registroAlumno.libreta_artes ? 'white' : '#64748b', 
+                                border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 'bold' 
+                              }}
+                              title="Libreta de Artes"
+                            >
+                              🎨 L. Artes
+                            </button>
+                            <button 
+                              onClick={() => cambiarMaterial && cambiarMaterial(alumno.id, 'libro_lenguajes')}
+                              style={{ 
+                                padding: '0.2rem 0.5rem', 
+                                background: registroAlumno.libro_lenguajes ? '#0284c7' : '#f8fafc', 
+                                color: registroAlumno.libro_lenguajes ? 'white' : '#64748b', 
+                                border: '1px solid #cbd5e1', borderRadius: '4px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 'bold' 
+                              }}
+                              title="Libro de Lenguajes"
+                            >
+                              📖 Libro
                             </button>
                           </div>
                         </td>
