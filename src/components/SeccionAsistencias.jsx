@@ -78,7 +78,7 @@ export default function SeccionAsistencias({
                 <tbody>
                   {(!verCompletadosAsistencia ? alumnosPendientes : alumnosCompletados).map((alumno) => {
                     const registroAlumno = asistenciasDia[alumno.id] || {}
-                    const estatusActual = registroAlumno.estatus || registroAlumno.asistencia // Soporta compatibilidad si guardas string o objeto
+                    const estatusActual = registroAlumno.estatus || registroAlumno.asistencia
                     
                     return (
                       <tr key={alumno.id} style={{ borderBottom: '1px solid #e2e8f0', fontSize: '0.85rem' }}>
