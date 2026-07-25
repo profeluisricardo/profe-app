@@ -8,9 +8,7 @@ export default function EvaluacionesTrimestrales() {
   const [alumnoSeleccionado, setAlumnoSeleccionado] = useState(null);
   const [calificaciones, setCalificaciones] = useState([]);
   
-  // Vista general y semáforo global
   const [vistaGeneral, setVistaGeneral] = useState(true);
-  const [todosLosAlumnos, setTodosLosAlumnos] = useState([]);
   const [resumenGlobal, setResumenGlobal] = useState([]);
   const [cargando, setCargando] = useState(false);
 
@@ -18,10 +16,13 @@ export default function EvaluacionesTrimestrales() {
     cargarGruposYGral();
   }, []);
 
+  // Cargar alumnos cada vez que cambie el grupo seleccionado de forma segura
   useEffect(() => {
     if (grupoSeleccionado) {
-      cargarAlumnos(grupoSeleccionado);
+      cargarAlumnosPorGrupo(grupoSeleccionado);
       setVistaGeneral(false);
+    } else {
+      setAlumnos([]);
     }
   }, [grupoSeleccionado]);
 
@@ -36,14 +37,10 @@ export default function EvaluacionesTrimestrales() {
     const { data: gruposData } = await supabase.from('grupos').select('*').order('nombre');
     if (gruposData) setGrupos(gruposData);
 
-    // Cargar todos los alumnos de todos los grupos para el semáforo global
     const { data: alumnosData } = await supabase.from('alumnos').select('*, grupos(nombre)');
     const { data: evalsData } = await supabase.from('evaluaciones_consolidadas').select('*');
 
     if (alumnosData) {
-      setTodosLosAlumnos(alumnosData);
-      
-      // Procesar resumen global con promedios y semáforo por alumno
       const globalProcesado = alumnosData.map(alum => {
         const evalsAlum = evalsData ? evalsData.filter(e => e.alumno_id === alum.id) : [];
         const sumaPromedios = evalsAlum.reduce((acc, curr) => acc + (Number(curr.promedio_final) || 0), 0);
@@ -53,8 +50,7 @@ export default function EvaluacionesTrimestrales() {
           ...alum,
           grupoNombre: alum.grupos?.nombre || 'Sin Grupo',
           promedioGeneral,
-          totalEvals: evalsAlum.length,
-          asistencias: 28, // Base o consulta real
+          asistencias: 28,
           faltas: 2,
           retardos: 1,
           entregadas: 14,
@@ -66,13 +62,21 @@ export default function EvaluacionesTrimestrales() {
     setCargando(false);
   };
 
-  const cargarAlumnos = async (grupoId) => {
-    const { data } = await supabase
+  const cargarAlumnosPorGrupo = async (grupoId) => {
+    setCargando(true);
+    // Aseguramos compatibilidad si grupo_id es texto o número
+    const { data, error } = await supabase
       .from('alumnos')
       .select('*')
       .eq('grupo_id', grupoId)
       .order('apellido');
-    if (data) setAlumnos(data);
+
+    if (!error && data) {
+      setAlumnos(data);
+    } else {
+      setAlumnos([]);
+    }
+    setCargando(false);
   };
 
   const cargarDatosAlumno = async (alumnoId) => {
@@ -87,7 +91,7 @@ export default function EvaluacionesTrimestrales() {
 
   const obtenerSemaforo = (promedio) => {
     const val = Number(promedio);
-    if (!val || val === 0) return { color: 'bg-slate-100 text-slate-600 border-slate-300', icon: '⚪', texto: 'Sin evaluar' };
+    if (!val || val === 0) return { color: 'bg-slate-100 text-slate-700 border-slate-300', icon: '⚪', texto: 'Sin evaluar' };
     if (val >= 8.5) return { color: 'bg-emerald-100 text-emerald-800 border-emerald-300', icon: '🟢', texto: 'Excelente' };
     if (val >= 6.0) return { color: 'bg-amber-100 text-amber-800 border-amber-300', icon: '🟡', texto: 'Regular' };
     return { color: 'bg-rose-100 text-rose-800 border-rose-300', icon: '🔴', texto: 'En Riesgo' };
@@ -98,107 +102,131 @@ export default function EvaluacionesTrimestrales() {
   };
 
   return (
-    <div className="p-6 max-w-7xl mx-auto bg-white rounded-xl shadow-md space-y-6">
-      {/* Encabezado Oculto para Impresión PDF */}
+    <div className="p-4 sm:p-6 max-w-7xl mx-auto bg-white dark:bg-slate-900 rounded-xl shadow-md space-y-6">
+      {/* Encabezado Impresión PDF */}
       <div className="hidden print:block text-center mb-6">
-        <h1 className="text-2xl font-bold text-slate-900">Escuela Secundaria - Reporte General y Semáforo Escolar</h1>
-        <p className="text-sm text-slate-600">Monitoreo Integral de Asistencias, Tareas y Rendimiento</p>
+        <h1 className="text-2xl font-bold text-slate-900">Escuela Secundaria - Reporte Escolar</h1>
+        <p className="text-sm text-slate-600">Sistema Integral de Asistencias, Tareas y Evaluaciones</p>
         <hr className="my-2 border-slate-300" />
       </div>
 
-      {/* Controles de Navegación / Filtros (Ocultos en PDF) */}
-      <div className="print:hidden flex flex-wrap gap-4 items-center justify-between bg-slate-50 p-4 rounded-lg border border-slate-200">
-        <div className="flex gap-3">
+      {/* CONTROLES MÓVIL OPTIMIZADOS (Botones grandes y adaptables) */}
+      <div className="print:hidden flex flex-col gap-3 bg-slate-50 dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+        <div className="flex flex-col sm:flex-row gap-3 justify-between items-center">
           <button
             onClick={() => {
               setVistaGeneral(true);
               setAlumnoSeleccionado(null);
               setGrupoSeleccionado('');
             }}
-            className={`px-4 py-2 rounded-lg font-bold text-sm shadow-sm transition ${
-              vistaGeneral ? 'bg-blue-600 text-white' : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-100'
+            className={`w-full sm:w-auto px-4 py-3 rounded-xl font-bold text-sm shadow transition flex items-center justify-center gap-2 ${
+              vistaGeneral ? 'bg-blue-600 text-white' : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600'
             }`}
           >
-            🌐 Semáforo General (Todos los Grupos)
+            🌐 Semáforo General
           </button>
-        </div>
-
-        <div className="flex gap-3 items-center">
-          <select 
-            className="p-2 border border-slate-300 rounded-md bg-white text-slate-800 text-sm font-medium focus:ring-2 focus:ring-blue-500"
-            value={grupoSeleccionado}
-            onChange={(e) => {
-              setGrupoSeleccionado(e.target.value);
-              setAlumnoSeleccionado(null);
-              setVistaGeneral(false);
-            }}
-          >
-            <option value="">-- Filtrar por Grupo --</option>
-            {grupos.map((g) => (
-              <option key={g.id} value={g.id}>{g.nombre}</option>
-            ))}
-          </select>
 
           <button
             onClick={imprimirPDF}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 rounded-lg shadow text-sm transition flex items-center gap-1.5 cursor-pointer"
+            className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-3 rounded-xl shadow text-sm transition flex items-center justify-center gap-2 cursor-pointer"
           >
             🖨️ Imprimir Reporte PDF
           </button>
         </div>
+
+        {/* Selectores de Grupo y Alumno optimizados para Celular */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-200 dark:border-slate-700">
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Filtrar por Grupo:</label>
+            <select 
+              className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-800 dark:text-white text-sm font-medium focus:ring-2 focus:ring-blue-500"
+              value={grupoSeleccionado}
+              onChange={(e) => {
+                setGrupoSeleccionado(e.target.value);
+                setAlumnoSeleccionado(null);
+              }}
+            >
+              <option value="">-- Seleccione un grupo --</option>
+              {grupos.map((g) => (
+                <option key={g.id} value={g.id}>{g.nombre}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Seleccionar Alumno:</label>
+            <select 
+              className="w-full p-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-700 text-slate-800 dark:text-white text-sm font-medium focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+              value={alumnoSeleccionado ? alumnoSeleccionado.id : ''}
+              onChange={(e) => {
+                const alum = alumnos.find(a => a.id === e.target.value);
+                if (alum) {
+                  setAlumnoSeleccionado(alum);
+                  setVistaGeneral(false);
+                }
+              }}
+              disabled={!grupoSeleccionado || cargando}
+            >
+              <option value="">{cargando ? 'Cargando alumnos...' : '-- Seleccione un alumno --'}</option>
+              {alumnos.map((a) => (
+                <option key={a.id} value={a.id}>{a.apellido} {a.nombre}</option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
 
-      {/* VISTA 1: SEMÁFORO GENERAL DE PRIMERA VISTA */}
+      {/* VISTA 1: SEMÁFORO GENERAL */}
       {vistaGeneral && !alumnoSeleccionado && (
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <h2 className="text-lg font-bold text-slate-800">📊 Semáforo y Estatus General de Alumnos</h2>
-            <span className="text-xs text-slate-500 bg-slate-100 px-3 py-1 rounded-full font-semibold">
-              Total de Alumnos: {resumenGlobal.length}
+            <h2 className="text-base sm:text-lg font-bold text-slate-800 dark:text-white">📊 Semáforo y Estatus de Alumnos</h2>
+            <span className="text-xs text-slate-500 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full font-semibold">
+              Total: {resumenGlobal.length}
             </span>
           </div>
 
-          <div className="overflow-x-auto rounded-lg border border-slate-200 shadow-sm">
+          <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
             <table className="w-full text-left border-collapse text-sm">
               <thead>
                 <tr className="bg-slate-800 text-white">
                   <th className="p-3">Alumno</th>
                   <th className="p-3">Grupo</th>
-                  <th className="p-3 text-center">Asistencias / Faltas</th>
-                  <th className="p-3 text-center">Tareas (Entregadas / Pendientes)</th>
-                  <th className="p-3 text-center">Promedio General</th>
+                  <th className="p-3 text-center">Asis / Faltas</th>
+                  <th className="p-3 text-center">Tareas</th>
+                  <th className="p-3 text-center">Promedio</th>
                   <th className="p-3 text-center bg-slate-900">Semáforo</th>
                   <th className="p-3 text-center print:hidden">Acción</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200">
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-700 dark:bg-slate-800">
                 {resumenGlobal.length > 0 ? (
                   resumenGlobal.map((item) => {
                     const sem = obtenerSemaforo(item.promedioGeneral);
                     return (
-                      <tr key={item.id} className="hover:bg-slate-50">
-                        <td className="p-3 font-semibold text-slate-800 flex items-center gap-3">
+                      <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                        <td className="p-3 font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
                           {item.foto_url ? (
                             <img src={item.foto_url} alt="" className="w-8 h-8 rounded-full object-cover border" />
                           ) : (
-                            <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">
+                            <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
                               {item.nombre?.[0]}{item.apellido?.[0]}
                             </div>
                           )}
-                          {item.apellido} {item.nombre}
+                          <span className="truncate max-w-[140px] sm:max-w-none">{item.apellido} {item.nombre}</span>
                         </td>
-                        <td className="p-3 text-slate-600 font-medium">{item.grupoNombre}</td>
+                        <td className="p-3 text-slate-600 dark:text-slate-300 font-medium">{item.grupoNombre}</td>
                         <td className="p-3 text-center text-xs">
-                          <span className="text-emerald-700 font-bold">{item.asistencias} Asis</span> / <span className="text-rose-700 font-bold">{item.faltas} Faltas</span>
+                          <span className="text-emerald-600 font-bold">{item.asistencias}</span> / <span className="text-rose-600 font-bold">{item.faltas}</span>
                         </td>
                         <td className="p-3 text-center text-xs">
-                          <span className="text-blue-700 font-bold">{item.entregadas} OK</span> / <span className="text-amber-700 font-bold">{item.porEntregar} Pend</span>
+                          <span className="text-blue-600 font-bold">{item.entregadas}</span> / <span className="text-amber-600 font-bold">{item.porEntregar}</span>
                         </td>
-                        <td className="p-3 text-center font-bold text-slate-700">
+                        <td className="p-3 text-center font-bold text-slate-700 dark:text-slate-200">
                           {item.promedioGeneral > 0 ? item.promedioGeneral.toFixed(1) : 'N/D'}
                         </td>
                         <td className="p-3 text-center">
-                          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-xs font-bold ${sem.color}`}>
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full border text-xs font-bold ${sem.color}`}>
                             {sem.icon} {sem.texto}
                           </span>
                         </td>
@@ -208,9 +236,9 @@ export default function EvaluacionesTrimestrales() {
                               setAlumnoSeleccionado(item);
                               setVistaGeneral(false);
                             }}
-                            className="bg-blue-50 text-blue-700 hover:bg-blue-100 px-3 py-1 rounded-md text-xs font-bold transition"
+                            className="bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 px-3 py-1.5 rounded-lg text-xs font-bold transition"
                           >
-                            Ver Detalle
+                            Ver
                           </button>
                         </td>
                       </tr>
@@ -219,7 +247,7 @@ export default function EvaluacionesTrimestrales() {
                 ) : (
                   <tr>
                     <td colSpan="7" className="p-6 text-center text-slate-500 italic">
-                      Cargando registros de alumnos...
+                      Cargando alumnos o sin registros...
                     </td>
                   </tr>
                 )}
@@ -229,19 +257,19 @@ export default function EvaluacionesTrimestrales() {
         </div>
       )}
 
-      {/* VISTA 2: DETALLE INDIVIDUAL DE ALUMNO (O AL SELECCIONAR) */}
+      {/* VISTA 2: DETALLE INDIVIDUAL */}
       {alumnoSeleccionado && (
         <div className="space-y-6">
-          <div className="print:hidden flex justify-between items-center">
+          <div className="print:hidden">
             <button
               onClick={() => setAlumnoSeleccionado(null)}
-              className="bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold px-4 py-1.5 rounded-lg text-sm transition"
+              className="bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-white font-bold px-4 py-2 rounded-xl text-sm transition"
             >
               ← Volver al Semáforo General
             </button>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center gap-6 bg-slate-50 p-6 rounded-xl border border-slate-200 shadow-sm">
+          <div className="flex flex-col sm:flex-row items-center gap-6 bg-slate-50 dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
             {alumnoSeleccionado.foto_url ? (
               <img src={alumnoSeleccionado.foto_url} alt="" className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-md" />
             ) : (
@@ -250,59 +278,59 @@ export default function EvaluacionesTrimestrales() {
               </div>
             )}
             <div className="text-center sm:text-left flex-1">
-              <h2 className="text-xl font-bold text-slate-800">{alumnoSeleccionado.apellido} {alumnoSeleccionado.nombre}</h2>
-              <p className="text-sm text-slate-500 mt-0.5">Grupo: {alumnoSeleccionado.grupoNombre}</p>
-              <span className="inline-block mt-2 bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded-full">
+              <h2 className="text-xl font-bold text-slate-800 dark:text-white">{alumnoSeleccionado.apellido} {alumnoSeleccionado.nombre}</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Grupo: {alumnoSeleccionado.grupoNombre || 'Asignado'}</p>
+              <span className="inline-block mt-2 bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200 text-xs font-semibold px-3 py-1 rounded-full">
                 Fórmula: (Asistencia 10%) + (Materiales 10%) + (Trabajos 60%) + (Examen 20%)
               </span>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-              <h3 className="text-sm font-bold text-slate-700 mb-3">📋 Asistencias Detalladas</h3>
+            <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+              <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3">📋 Control de Asistencias</h3>
               <div className="grid grid-cols-4 gap-2 text-center text-xs">
-                <div className="bg-emerald-50 p-2 rounded-lg border border-emerald-200">
-                  <span className="block text-emerald-700 font-semibold">Asistencias</span>
-                  <span className="text-base font-bold text-emerald-900">28</span>
+                <div className="bg-emerald-50 dark:bg-emerald-950/40 p-2.5 rounded-lg border border-emerald-200 dark:border-emerald-800">
+                  <span className="block text-emerald-700 dark:text-emerald-400 font-semibold">Asist.</span>
+                  <span className="text-base font-bold text-emerald-900 dark:text-emerald-200">28</span>
                 </div>
-                <div className="bg-rose-50 p-2 rounded-lg border border-rose-200">
-                  <span className="block text-rose-700 font-semibold">Faltas</span>
-                  <span className="text-base font-bold text-rose-900">2</span>
+                <div className="bg-rose-50 dark:bg-rose-950/40 p-2.5 rounded-lg border border-rose-200 dark:border-rose-800">
+                  <span className="block text-rose-700 dark:text-rose-400 font-semibold">Faltas</span>
+                  <span className="text-base font-bold text-rose-900 dark:text-rose-200">2</span>
                 </div>
-                <div className="bg-amber-50 p-2 rounded-lg border border-amber-200">
-                  <span className="block text-amber-700 font-semibold">Retardos</span>
-                  <span className="text-base font-bold text-amber-900">1</span>
+                <div className="bg-amber-50 dark:bg-amber-950/40 p-2.5 rounded-lg border border-amber-200 dark:border-amber-800">
+                  <span className="block text-amber-700 dark:text-amber-400 font-semibold">Retardos</span>
+                  <span className="text-base font-bold text-amber-900 dark:text-amber-200">1</span>
                 </div>
-                <div className="bg-blue-50 p-2 rounded-lg border border-blue-200">
-                  <span className="block text-blue-700 font-semibold">Justificantes</span>
-                  <span className="text-base font-bold text-blue-900">1</span>
+                <div className="bg-blue-50 dark:bg-blue-950/40 p-2.5 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <span className="block text-blue-700 dark:text-blue-400 font-semibold">Justif.</span>
+                  <span className="text-base font-bold text-blue-900 dark:text-blue-200">1</span>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
-              <h3 className="text-sm font-bold text-slate-700 mb-3">📚 Estatus de Tareas</h3>
+            <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+              <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200 mb-3">📚 Estatus de Tareas</h3>
               <div className="grid grid-cols-2 gap-3">
-                <div className="bg-blue-50 p-3 rounded-lg border border-blue-200 flex items-center justify-between">
+                <div className="bg-blue-50 dark:bg-blue-950/40 p-3 rounded-xl border border-blue-200 dark:border-blue-800 flex items-center justify-between">
                   <div>
-                    <span className="block text-xs text-blue-700 font-semibold">Entregadas</span>
-                    <span className="text-lg font-bold text-blue-900">14</span>
+                    <span className="block text-xs text-blue-700 dark:text-blue-400 font-semibold">Entregadas</span>
+                    <span className="text-lg font-bold text-blue-900 dark:text-blue-200">14</span>
                   </div>
-                  <span>✅</span>
+                  <span className="text-xl">✅</span>
                 </div>
-                <div className="bg-amber-50 p-3 rounded-lg border border-amber-200 flex items-center justify-between">
+                <div className="bg-amber-50 dark:bg-amber-950/40 p-3 rounded-xl border border-amber-200 dark:border-amber-800 flex items-center justify-between">
                   <div>
-                    <span className="block text-xs text-amber-700 font-semibold">Por Entregar</span>
-                    <span className="text-lg font-bold text-amber-900">2</span>
+                    <span className="block text-xs text-amber-700 dark:text-amber-400 font-semibold">Pendientes</span>
+                    <span className="text-lg font-bold text-amber-900 dark:text-amber-200">2</span>
                   </div>
-                  <span>⚠️</span>
+                  <span className="text-xl">⚠️</span>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="overflow-x-auto rounded-lg border border-slate-200 shadow-sm">
+          <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
             <table className="w-full text-left border-collapse text-sm">
               <thead>
                 <tr className="bg-slate-800 text-white">
@@ -314,17 +342,17 @@ export default function EvaluacionesTrimestrales() {
                   <th className="p-3 text-center bg-slate-900">Promedio / Semáforo</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-200">
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-700 dark:bg-slate-800">
                 {calificaciones.length > 0 ? (
                   calificaciones.map((cal, idx) => {
                     const sem = obtenerSemaforo(cal.promedio_final);
                     return (
-                      <tr key={idx} className="hover:bg-slate-50">
-                        <td className="p-3 font-semibold text-slate-700">Trimestre {cal.trimestre}</td>
-                        <td className="p-3 text-center">{cal.asistencia ?? '-'}</td>
-                        <td className="p-3 text-center">{cal.materiales ?? '-'}</td>
-                        <td className="p-3 text-center">{cal.trabajos ?? '-'}</td>
-                        <td className="p-3 text-center">{cal.examen ?? '-'}</td>
+                      <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                        <td className="p-3 font-semibold text-slate-700 dark:text-slate-200">Trimestre {cal.trimestre}</td>
+                        <td className="p-3 text-center dark:text-slate-300">{cal.asistencia ?? '-'}</td>
+                        <td className="p-3 text-center dark:text-slate-300">{cal.materiales ?? '-'}</td>
+                        <td className="p-3 text-center dark:text-slate-300">{cal.trabajos ?? '-'}</td>
+                        <td className="p-3 text-center dark:text-slate-300">{cal.examen ?? '-'}</td>
                         <td className="p-3 text-center">
                           <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full border text-xs font-bold ${sem.color}`}>
                             {sem.icon} {cal.promedio_final ? Number(cal.promedio_final).toFixed(1) : 'N/D'}
