@@ -185,7 +185,6 @@ export default function EvaluacionesTrimestrales() {
           </div>
 
           <div className="rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden bg-white dark:bg-slate-800">
-            {/* Cabecera Grid */}
             <div className="grid grid-cols-12 bg-slate-800 text-white text-xs font-bold p-3 gap-2 items-center">
               <div className="col-span-5 sm:col-span-4">Alumno</div>
               <div className="hidden sm:block sm:col-span-2 text-center">Grupo</div>
@@ -194,14 +193,12 @@ export default function EvaluacionesTrimestrales() {
               <div className="col-span-2 sm:col-span-2 text-center print:hidden">Acción</div>
             </div>
 
-            {/* Filas Grid */}
             <div className="divide-y divide-slate-200 dark:divide-slate-700">
               {resumenGlobal.length > 0 ? (
                 resumenGlobal.map((item) => {
                   const sem = obtenerSemaforo(item.promedioGeneral);
                   return (
                     <div key={item.id} className="grid grid-cols-12 p-3 gap-2 items-center hover:bg-slate-50 dark:hover:bg-slate-700/50 text-xs sm:text-sm">
-                      {/* Alumno con miniatura estricta w-8 h-8 */}
                       <div className="col-span-5 sm:col-span-4 flex items-center gap-2 overflow-hidden">
                         {item.foto_url ? (
                           <img src={item.foto_url} alt="" className="w-8 h-8 rounded-full object-cover shrink-0 border border-slate-300 dark:border-slate-600" />
@@ -216,24 +213,20 @@ export default function EvaluacionesTrimestrales() {
                         </div>
                       </div>
 
-                      {/* Grupo (Escritorio) */}
                       <div className="hidden sm:block sm:col-span-2 text-center text-slate-600 dark:text-slate-300 font-medium truncate">
                         {item.grupoNombre}
                       </div>
 
-                      {/* Asistencias / Faltas */}
                       <div className="col-span-3 sm:col-span-2 text-center font-medium whitespace-nowrap">
                         <span className="text-emerald-600 font-bold">{item.asistencias}</span>/<span className="text-rose-600 font-bold">{item.faltas}</span>
                       </div>
 
-                      {/* Semáforo */}
                       <div className="col-span-2 sm:col-span-2 text-center flex justify-center">
                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] sm:text-xs font-bold ${sem.color}`}>
                           {sem.icon} <span className="hidden sm:inline">{sem.texto}</span>
                         </span>
                       </div>
 
-                      {/* Acción */}
                       <div className="col-span-2 sm:col-span-2 text-center print:hidden">
                         <button
                           onClick={() => {
