@@ -174,7 +174,7 @@ export default function EvaluacionesTrimestrales() {
         </div>
       </div>
 
-      {/* VISTA 1: SEMÁFORO GENERAL RECONSTRUIDO CON GRID / FLEX (CERO DESBORDES) */}
+      {/* VISTA 1: SEMÁFORO GENERAL */}
       {vistaGeneral && !alumnoSeleccionado && (
         <div className="space-y-3">
           <div className="flex justify-between items-center px-1">
@@ -187,12 +187,11 @@ export default function EvaluacionesTrimestrales() {
           <div className="rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden bg-white dark:bg-slate-800">
             {/* Cabecera Grid */}
             <div className="grid grid-cols-12 bg-slate-800 text-white text-xs font-bold p-3 gap-2 items-center">
-              <div className="col-span-4 sm:col-span-4">Alumno</div>
-              <div className="col-span-2 sm:col-span-1 text-center">Grupo</div>
-              <div className="col-span-2 sm:col-span-2 text-center">Asis/Faltas</div>
-              <div className="hidden sm:block sm:col-span-2 text-center">Tareas</div>
+              <div className="col-span-5 sm:col-span-4">Alumno</div>
+              <div className="hidden sm:block sm:col-span-2 text-center">Grupo</div>
+              <div className="col-span-3 sm:col-span-2 text-center">Asis/Faltas</div>
               <div className="col-span-2 sm:col-span-2 text-center">Semáforo</div>
-              <div className="col-span-2 sm:col-span-1 text-center print:hidden">Acción</div>
+              <div className="col-span-2 sm:col-span-2 text-center print:hidden">Acción</div>
             </div>
 
             {/* Filas Grid */}
@@ -202,8 +201,8 @@ export default function EvaluacionesTrimestrales() {
                   const sem = obtenerSemaforo(item.promedioGeneral);
                   return (
                     <div key={item.id} className="grid grid-cols-12 p-3 gap-2 items-center hover:bg-slate-50 dark:hover:bg-slate-700/50 text-xs sm:text-sm">
-                      {/* Alumno con miniatura estricta */}
-                      <div className="col-span-4 sm:col-span-4 flex items-center gap-2 overflow-hidden">
+                      {/* Alumno con miniatura estricta w-8 h-8 */}
+                      <div className="col-span-5 sm:col-span-4 flex items-center gap-2 overflow-hidden">
                         {item.foto_url ? (
                           <img src={item.foto_url} alt="" className="w-8 h-8 rounded-full object-cover shrink-0 border border-slate-300 dark:border-slate-600" />
                         ) : (
@@ -211,22 +210,20 @@ export default function EvaluacionesTrimestrales() {
                             {item.nombre?.[0]}{item.apellido?.[0]}
                           </div>
                         )}
-                        <span className="font-semibold text-slate-800 dark:text-slate-100 truncate">{item.apellido} {item.nombre}</span>
+                        <div className="truncate">
+                          <p className="font-semibold text-slate-800 dark:text-slate-100 truncate">{item.apellido} {item.nombre}</p>
+                          <p className="text-[10px] text-slate-500 sm:hidden">{item.grupoNombre}</p>
+                        </div>
                       </div>
 
-                      {/* Grupo */}
-                      <div className="col-span-2 sm:col-span-1 text-center text-slate-600 dark:text-slate-300 font-medium truncate">
+                      {/* Grupo (Escritorio) */}
+                      <div className="hidden sm:block sm:col-span-2 text-center text-slate-600 dark:text-slate-300 font-medium truncate">
                         {item.grupoNombre}
                       </div>
 
                       {/* Asistencias / Faltas */}
-                      <div className="col-span-2 sm:col-span-2 text-center font-medium whitespace-nowrap">
+                      <div className="col-span-3 sm:col-span-2 text-center font-medium whitespace-nowrap">
                         <span className="text-emerald-600 font-bold">{item.asistencias}</span>/<span className="text-rose-600 font-bold">{item.faltas}</span>
-                      </div>
-
-                      {/* Tareas (Oculto en móvil muy pequeño, visible en sm) */}
-                      <div className="hidden sm:block sm:col-span-2 text-center font-medium whitespace-nowrap">
-                        <span className="text-blue-600 font-bold">{item.entregadas}</span>/<span className="text-amber-600 font-bold">{item.porEntregar}</span>
                       </div>
 
                       {/* Semáforo */}
@@ -237,13 +234,13 @@ export default function EvaluacionesTrimestrales() {
                       </div>
 
                       {/* Acción */}
-                      <div className="col-span-2 sm:col-span-1 text-center print:hidden">
+                      <div className="col-span-2 sm:col-span-2 text-center print:hidden">
                         <button
                           onClick={() => {
                             setAlumnoSeleccionado(item);
                             setVistaGeneral(false);
                           }}
-                          className="bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 px-2.5 py-1 rounded-md text-xs font-bold transition"
+                          className="bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 px-3 py-1 rounded-md text-xs font-bold transition"
                         >
                           Ver
                         </button>
