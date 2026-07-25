@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './lib/supabase'
 import ListaAlumnos from './ListaAlumnos'
+import EvaluacionesTrimestrales from './components/EvaluacionesTrimestrales'
 
 export default function App() {
   const [grupos, setGrupos] = useState([])
+  const [vistaActual, setVistaActual] = useState('menu') // 'menu', 'grupo', 'evaluaciones'
   const [grupoSeleccionado, setGrupoSeleccionado] = useState(() => {
     const guardado = localStorage.getItem('grupo_activo')
     try {
@@ -13,7 +15,11 @@ export default function App() {
     }
   })
 
+  // Si había un grupo activo en localStorage al recargar, mantenemos la vista en 'grupo'
   useEffect(() => {
+    if (grupoSeleccionado) {
+      setVistaActual('grupo')
+    }
     cargarGrupos()
   }, [])
 
@@ -71,15 +77,18 @@ export default function App() {
 
   const seleccionarGrupo = (grupo) => {
     setGrupoSeleccionado(grupo)
+    setVistaActual('grupo')
     localStorage.setItem('grupo_activo', JSON.stringify(grupo))
   }
 
   const volverAlMenu = () => {
     setGrupoSeleccionado(null)
+    setVistaActual('menu')
     localStorage.removeItem('grupo_activo')
   }
 
-  if (grupoSeleccionado) {
+  // Vista cuando estamos dentro de un grupo específico
+  if (vistaActual === 'grupo' && grupoSeleccionado) {
     const esAmarillo = grupoSeleccionado.colorFondo === '#eab308'
     return (
       <div style={{ maxWidth: '800px', margin: '0 auto', padding: '1rem', fontFamily: 'sans-serif' }}>
@@ -121,10 +130,60 @@ export default function App() {
     )
   }
 
+  // Vista general de Evaluaciones y Reportes Trimestrales
+  if (vistaActual === 'evaluaciones') {
+    return (
+      <div style={{ maxWidth: '900px', margin: '0 auto', padding: '1rem', fontFamily: 'sans-serif' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+          <button 
+            onClick={volverAlMenu}
+            style={{
+              background: '#1b365d',
+              color: 'white',
+              border: 'none',
+              padding: '0.5rem 1rem',
+              borderRadius: '6px',
+              fontWeight: 'bold',
+              cursor: 'pointer'
+            }}
+          >
+            ← Menú Principal
+          </button>
+        </div>
+        <EvaluacionesTrimestrales />
+      </div>
+    )
+  }
+
+  // Menú Principal
   return (
     <div style={{ maxWidth: '600px', margin: '0 auto', padding: '1rem', fontFamily: 'sans-serif', textAlign: 'center' }}>
       <h2>Panel de administración escolar - Secundaria</h2>
-      <p style={{ color: '#64748b' }}>Selecciona un Grupo</p>
+      <p style={{ color: '#64748b' }}>Selecciona un Grupo o Accede a Evaluaciones</p>
+
+      {/* Botón de acceso rápido al módulo de Evaluaciones y PDF */}
+      <div style={{ margin: '1.5rem 0' }}>
+        <button
+          onClick={() => setVistaActual('evaluaciones')}
+          style={{
+            padding: '0.75rem 1.5rem',
+            fontSize: '1rem',
+            fontWeight: 'bold',
+            background: '#1b365d',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+          }}
+        >
+          📊 Ver Evaluaciones Trimestrales y Boletas PDF
+        </button>
+      </div>
+
+      <hr style={{ border: '0', borderTop: '1px solid #e2e8f0', margin: '1.5rem 0' }} />
+
+      <h3 style={{ color: '#334155', fontSize: '1.1rem' }}>Grupos Activos</h3>
       
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', marginTop: '1rem' }}>
         {grupos.map((grupo) => {
