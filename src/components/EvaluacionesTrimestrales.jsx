@@ -108,7 +108,7 @@ export default function EvaluacionesTrimestrales() {
         <hr className="my-2 border-slate-300" />
       </div>
 
-      {/* CONTROLES MÓVIL / ESCRITORIO OPTIMIZADOS */}
+      {/* CONTROLES MÓVIL / ESCRITORIO */}
       <div className="print:hidden flex flex-col gap-3 bg-slate-50 dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
         <div className="flex flex-col sm:flex-row gap-3 justify-between items-center">
           <button
@@ -174,7 +174,7 @@ export default function EvaluacionesTrimestrales() {
         </div>
       </div>
 
-      {/* VISTA 1: SEMÁFORO GENERAL CON ANCHO DE TABLA BLINDADO */}
+      {/* VISTA 1: SEMÁFORO GENERAL CON TABLE-FIXED ESTRICTO */}
       {vistaGeneral && !alumnoSeleccionado && (
         <div className="space-y-3">
           <div className="flex justify-between items-center px-1">
@@ -185,16 +185,16 @@ export default function EvaluacionesTrimestrales() {
           </div>
 
           <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
-            <table className="w-full text-left border-collapse text-xs sm:text-sm min-w-[700px]">
+            <table className="w-full table-fixed text-left border-collapse text-xs sm:text-sm min-w-[750px]">
               <thead>
                 <tr className="bg-slate-800 text-white">
-                  <th className="p-3 w-1/3">Alumno</th>
-                  <th className="p-3 w-24">Grupo</th>
-                  <th className="p-3 text-center w-28 whitespace-nowrap">Asis / Faltas</th>
-                  <th className="p-3 text-center w-32 whitespace-nowrap">Tareas (OK / Pend)</th>
-                  <th className="p-3 text-center w-24 whitespace-nowrap">Promedio</th>
-                  <th className="p-3 text-center w-32 bg-slate-900">Semáforo</th>
-                  <th className="p-3 text-center w-20 print:hidden">Acción</th>
+                  <th className="p-3 w-[26%]">Alumno</th>
+                  <th className="p-3 w-[12%]">Grupo</th>
+                  <th className="p-3 w-[16%] text-center">Asis / Faltas</th>
+                  <th className="p-3 w-[18%] text-center">Tareas (OK/Pend)</th>
+                  <th className="p-3 w-[12%] text-center">Prom</th>
+                  <th className="p-3 w-[16%] text-center bg-slate-900">Semáforo</th>
+                  <th className="p-3 w-[10%] text-center print:hidden">Acción</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-700 dark:bg-slate-800">
@@ -203,29 +203,31 @@ export default function EvaluacionesTrimestrales() {
                     const sem = obtenerSemaforo(item.promedioGeneral);
                     return (
                       <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
-                        <td className="p-3 font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2.5">
-                          {/* MINIATURA ESTRICTA 8x8 FIJA */}
-                          {item.foto_url ? (
-                            <img src={item.foto_url} alt="" className="w-8 h-8 rounded-full object-cover shrink-0 border border-slate-300 dark:border-slate-600" />
-                          ) : (
-                            <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
-                              {item.nombre?.[0]}{item.apellido?.[0]}
-                            </div>
-                          )}
-                          <span className="truncate">{item.apellido} {item.nombre}</span>
+                        <td className="p-3 font-semibold text-slate-800 dark:text-slate-100 truncate">
+                          <div className="flex items-center gap-2.5 overflow-hidden">
+                            {/* MINIATURA ESTRICTA 8x8 FIJA Y NO DEFORMABLE */}
+                            {item.foto_url ? (
+                              <img src={item.foto_url} alt="" className="w-8 h-8 rounded-full object-cover shrink-0 border border-slate-300 dark:border-slate-600" />
+                            ) : (
+                              <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
+                                {item.nombre?.[0]}{item.apellido?.[0]}
+                              </div>
+                            )}
+                            <span className="truncate">{item.apellido} {item.nombre}</span>
+                          </div>
                         </td>
-                        <td className="p-3 text-slate-600 dark:text-slate-300 font-medium">{item.grupoNombre}</td>
+                        <td className="p-3 text-slate-600 dark:text-slate-300 font-medium truncate">{item.grupoNombre}</td>
                         <td className="p-3 text-center text-xs whitespace-nowrap">
-                          <span className="text-emerald-600 font-bold">{item.asistencias}</span> / <span className="text-rose-600 font-bold">{item.faltas}</span>
+                          <span className="text-emerald-600 font-bold">{item.asistencias}</span>/<span className="text-rose-600 font-bold">{item.faltas}</span>
                         </td>
                         <td className="p-3 text-center text-xs whitespace-nowrap">
-                          <span className="text-blue-600 font-bold">{item.entregadas}</span> / <span className="text-amber-600 font-bold">{item.porEntregar}</span>
+                          <span className="text-blue-600 font-bold">{item.entregadas}</span>/<span className="text-amber-600 font-bold">{item.porEntregar}</span>
                         </td>
                         <td className="p-3 text-center font-bold text-slate-700 dark:text-slate-200">
                           {item.promedioGeneral > 0 ? item.promedioGeneral.toFixed(1) : 'N/D'}
                         </td>
-                        <td className="p-3 text-center">
-                          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-xs font-bold ${sem.color}`}>
+                        <td className="p-3 text-center truncate">
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[11px] font-bold ${sem.color}`}>
                             {sem.icon} {sem.texto}
                           </span>
                         </td>
@@ -235,7 +237,7 @@ export default function EvaluacionesTrimestrales() {
                               setAlumnoSeleccionado(item);
                               setVistaGeneral(false);
                             }}
-                            className="bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 px-3 py-1 rounded-md text-xs font-bold transition"
+                            className="bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 px-2.5 py-1 rounded-md text-xs font-bold transition"
                           >
                             Ver
                           </button>
