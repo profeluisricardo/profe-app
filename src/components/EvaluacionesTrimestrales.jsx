@@ -108,34 +108,34 @@ export default function EvaluacionesTrimestrales() {
         <hr className="my-2 border-slate-300" />
       </div>
 
-      {/* CONTROLES MÓVIL SÚPER COMPACTOS Y EFICIENTES */}
-      <div className="print:hidden flex flex-col gap-2.5 bg-slate-50 dark:bg-slate-800 p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
-        <div className="grid grid-cols-2 gap-2">
+      {/* CONTROLES MÓVIL / ESCRITORIO OPTIMIZADOS */}
+      <div className="print:hidden flex flex-col gap-3 bg-slate-50 dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+        <div className="flex flex-col sm:flex-row gap-3 justify-between items-center">
           <button
             onClick={() => {
               setVistaGeneral(true);
               setAlumnoSeleccionado(null);
               setGrupoSeleccionado('');
             }}
-            className={`w-full py-2.5 px-3 rounded-lg font-bold text-xs sm:text-sm shadow transition flex items-center justify-center gap-1.5 ${
+            className={`w-full sm:w-auto px-4 py-2.5 rounded-lg font-bold text-xs sm:text-sm shadow transition flex items-center justify-center gap-2 ${
               vistaGeneral ? 'bg-blue-600 text-white' : 'bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600'
             }`}
           >
-            🌐 Semáforo Gral.
+            🌐 Semáforo General
           </button>
 
           <button
             onClick={imprimirPDF}
-            className="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg shadow text-xs sm:text-sm transition flex items-center justify-center gap-1.5 cursor-pointer"
+            className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 rounded-lg shadow text-xs sm:text-sm transition flex items-center justify-center gap-2 cursor-pointer"
           >
-            🖨️ Imprimir PDF
+            🖨️ Imprimir Reporte PDF
           </button>
         </div>
 
         {/* Selectores */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-200 dark:border-slate-700">
           <div>
-            <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">Filtrar Grupo:</label>
+            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Filtrar Grupo:</label>
             <select 
               className="w-full p-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-white text-xs sm:text-sm font-medium focus:ring-2 focus:ring-blue-500"
               value={grupoSeleccionado}
@@ -152,7 +152,7 @@ export default function EvaluacionesTrimestrales() {
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">Seleccionar Alumno:</label>
+            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-300 mb-1">Seleccionar Alumno:</label>
             <select 
               className="w-full p-2.5 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-white text-xs sm:text-sm font-medium focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
               value={alumnoSeleccionado ? alumnoSeleccionado.id : ''}
@@ -174,27 +174,27 @@ export default function EvaluacionesTrimestrales() {
         </div>
       </div>
 
-      {/* VISTA 1: SEMÁFORO GENERAL */}
+      {/* VISTA 1: SEMÁFORO GENERAL CON ANCHO DE TABLA BLINDADO */}
       {vistaGeneral && !alumnoSeleccionado && (
         <div className="space-y-3">
           <div className="flex justify-between items-center px-1">
-            <h2 className="text-sm sm:text-base font-bold text-slate-800 dark:text-white">📊 Semáforo y Estatus</h2>
-            <span className="text-[11px] text-slate-500 bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-full font-semibold">
+            <h2 className="text-sm sm:text-base font-bold text-slate-800 dark:text-white">📊 Semáforo y Estatus General</h2>
+            <span className="text-xs text-slate-500 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full font-semibold">
               Total: {resumenGlobal.length}
             </span>
           </div>
 
           <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
-            <table className="w-full text-left border-collapse text-xs sm:text-sm">
+            <table className="w-full text-left border-collapse text-xs sm:text-sm min-w-[700px]">
               <thead>
                 <tr className="bg-slate-800 text-white">
-                  <th className="p-2.5">Alumno</th>
-                  <th className="p-2.5">Grupo</th>
-                  <th className="p-2.5 text-center">Asis/Faltas</th>
-                  <th className="p-2.5 text-center">Tareas</th>
-                  <th className="p-2.5 text-center">Prom</th>
-                  <th className="p-2.5 text-center bg-slate-900">Semáforo</th>
-                  <th className="p-2.5 text-center print:hidden">Acción</th>
+                  <th className="p-3 w-1/3">Alumno</th>
+                  <th className="p-3 w-24">Grupo</th>
+                  <th className="p-3 text-center w-28 whitespace-nowrap">Asis / Faltas</th>
+                  <th className="p-3 text-center w-32 whitespace-nowrap">Tareas (OK / Pend)</th>
+                  <th className="p-3 text-center w-24 whitespace-nowrap">Promedio</th>
+                  <th className="p-3 text-center w-32 bg-slate-900">Semáforo</th>
+                  <th className="p-3 text-center w-20 print:hidden">Acción</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-700 dark:bg-slate-800">
@@ -203,39 +203,39 @@ export default function EvaluacionesTrimestrales() {
                     const sem = obtenerSemaforo(item.promedioGeneral);
                     return (
                       <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
-                        <td className="p-2 font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                          {/* MINIATURA ESTRICTA CONTROLADA */}
+                        <td className="p-3 font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2.5">
+                          {/* MINIATURA ESTRICTA 8x8 FIJA */}
                           {item.foto_url ? (
-                            <img src={item.foto_url} alt="" className="w-9 h-9 rounded-full object-cover shrink-0 border border-slate-300 dark:border-slate-600" />
+                            <img src={item.foto_url} alt="" className="w-8 h-8 rounded-full object-cover shrink-0 border border-slate-300 dark:border-slate-600" />
                           ) : (
-                            <div className="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
+                            <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
                               {item.nombre?.[0]}{item.apellido?.[0]}
                             </div>
                           )}
-                          <span className="truncate max-w-[120px] sm:max-w-none">{item.apellido} {item.nombre}</span>
+                          <span className="truncate">{item.apellido} {item.nombre}</span>
                         </td>
-                        <td className="p-2 text-slate-600 dark:text-slate-300 font-medium">{item.grupoNombre}</td>
-                        <td className="p-2 text-center text-[11px]">
-                          <span className="text-emerald-600 font-bold">{item.asistencias}</span>/<span className="text-rose-600 font-bold">{item.faltas}</span>
+                        <td className="p-3 text-slate-600 dark:text-slate-300 font-medium">{item.grupoNombre}</td>
+                        <td className="p-3 text-center text-xs whitespace-nowrap">
+                          <span className="text-emerald-600 font-bold">{item.asistencias}</span> / <span className="text-rose-600 font-bold">{item.faltas}</span>
                         </td>
-                        <td className="p-2 text-center text-[11px]">
-                          <span className="text-blue-600 font-bold">{item.entregadas}</span>/<span className="text-amber-600 font-bold">{item.porEntregar}</span>
+                        <td className="p-3 text-center text-xs whitespace-nowrap">
+                          <span className="text-blue-600 font-bold">{item.entregadas}</span> / <span className="text-amber-600 font-bold">{item.porEntregar}</span>
                         </td>
-                        <td className="p-2 text-center font-bold text-slate-700 dark:text-slate-200">
+                        <td className="p-3 text-center font-bold text-slate-700 dark:text-slate-200">
                           {item.promedioGeneral > 0 ? item.promedioGeneral.toFixed(1) : 'N/D'}
                         </td>
-                        <td className="p-2 text-center">
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[11px] font-bold ${sem.color}`}>
+                        <td className="p-3 text-center">
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-xs font-bold ${sem.color}`}>
                             {sem.icon} {sem.texto}
                           </span>
                         </td>
-                        <td className="p-2 text-center print:hidden">
+                        <td className="p-3 text-center print:hidden">
                           <button
                             onClick={() => {
                               setAlumnoSeleccionado(item);
                               setVistaGeneral(false);
                             }}
-                            className="bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 px-2.5 py-1 rounded-md text-xs font-bold transition"
+                            className="bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 px-3 py-1 rounded-md text-xs font-bold transition"
                           >
                             Ver
                           </button>
