@@ -1,154 +1,218 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase'; // Ajusta la ruta a tu cliente de Supabase
+import { supabase } from '../lib/supabase';
 
 export default function EvaluacionesTrimestrales() {
+  const [grupos, setGrupos] = useState([]);
+  const [grupoSeleccionado, setGrupoSeleccionado] = useState('');
   const [alumnos, setAlumnos] = useState([]);
   const [alumnoSeleccionado, setAlumnoSeleccionado] = useState(null);
-  const [evaluacionData, setEvaluacionData] = useState(null);
+  const [calificaciones, setCalificaciones] = useState([]);
   const [cargando, setCargando] = useState(false);
 
-  // 1. Cargar la lista de alumnos al iniciar
+  // Cargar grupos al montar el componente
   useEffect(() => {
-    async function fetchAlumnos() {
-      const { data, error } = await supabase
-        .from('alumnos')
-        .select('id, nombre_completo, grupo_id')
-        .order('nombre_completo', { ascending: true });
-      
-      if (!error && data) setAlumnos(data);
-    }
-    fetchAlumnos();
+    cargarGrupos();
   }, []);
 
-  // 2. Consultar la evaluación consolidada y la vista de promedios al seleccionar un alumno
-  const seleccionarAlumno = async (alumno) => {
-    setAlumnoSeleccionado(alumno);
-    setCargando(true);
+  // Cargar alumnos al cambiar de grupo
+  useEffect(() => {
+    if (grupoSeleccionado) {
+      cargarAlumnos(grupoSeleccionado);
+    } else {
+      setAlumnos([]);
+      setAlumnoSeleccionado(null);
+    }
+  }, [grupoSeleccionado]);
 
-    try {
-      // Consultamos las evaluaciones consolidadas del alumno
-      const { data, error } = await supabase
-        .from('evaluaciones_consolidadas')
-        .select(`
-          *,
-          periodos_evaluacion (numero_periodo, ciclo_escolar)
-        `)
-        .eq('alumno_id', alumno.id);
+  // Cargar calificaciones del alumno seleccionado
+  useEffect(() => {
+    if (alumnoSeleccionado) {
+      cargarCalificacionesAlumno(alumnoSeleccionado.id);
+    } else {
+      setCalificaciones([]);
+    }
+  }, [alumnoSeleccionado]);
 
-      if (error) throw error;
-      setEvaluacionData(data);
-    } catch (err) {
-      console.error("Error al cargar calificaciones:", err.message);
-    } finally {
-      setCargando(false);
+  const cargarGrupos = async () => {
+    const { data, error } = await supabase.from('grupos').select('*').order('nombre');
+    if (!error && data) {
+      setGrupos(data);
     }
   };
 
-  // 3. Función para disparar la exportación a PDF usando la impresión estilizada del navegador
-  const descargarPDF = () => {
+  const cargarAlumnos = async (grupoId) => {
+    setCargando(true);
+    // Asumiendo que tu tabla de alumnos tiene campos como id, nombre, apellido, foto_url
+    const { data, error } = await supabase
+      .from('alumnos')
+      .select('*')
+      .eq('grupo_id', grupoId)
+      .order('apellido');
+    
+    if (!error && data) {
+      setAlumnos(data);
+    }
+    setCargando(false);
+  };
+
+  const cargarCalificacionesAlumno = async (alumnoId) => {
+    // Consultando la vista o tabla de evaluaciones consolidadas
+    const { data, error } = await supabase
+      .from('evaluaciones_consolidadas')
+      .select('*')
+      .eq('alumno_id', alumnoId)
+      .order('trimestre');
+
+    if (!error && data) {
+      setCalificaciones(data);
+    }
+  };
+
+  const imprimirBoleta = () => {
     window.print();
   };
 
   return (
-    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif', maxWidth: '900px', margin: '0 auto' }}>
-      <h2 style={{ color: '#1b365d', borderBottom: '2px solid #1b365d', paddingBottom: '8px' }}>
-        Panel de Evaluaciones y Reportes Trimestrales
-      </h2>
-
-      {/* Selector de Alumnos */}
-      <div style={{ margin: '20px 0', background: '#f8fafc', padding: '15px', borderRadius: '6px', border: '1px solid #cbd5e1' }}>
-        <label style={{ fontWeight: 'bold', display: 'block', marginBottom: '8px' }}>Seleccionar Alumno:</label>
-        <select 
-          onChange={(e) => {
-            const alumno = alumnos.find(a => a.id == e.target.value);
-            if (alumno) seleccionarAlumno(alumno);
-          }}
-          style={{ width: '100%', padding: '10px', borderRadius: '4px', border: '1px solid #ccc', fontSize: '1em' }}
-        >
-          <option value="">-- Elige un alumno --</option>
-          {alumnos.map(a => (
-            <option key={a.id} value={a.id}>{a.nombre_completo}</option>
-          ))}
-        </select>
+    <div className="p-6 max-w-6xl mx-auto bg-white rounded-xl shadow-md space-y-6">
+      {/* Encabezado Oculto en Pantalla, Visible en PDF */}
+      <div className="print-only hidden print:block text-center mb-6">
+        <h1 className="text-2xl font-bold text-slate-900">Escuela Secundaria</h1>
+        <p className="text-sm text-slate-600">Reporte Individual de Evaluaciones y Asistencias</p>
+        <hr className="my-2 border-slate-300" />
       </div>
 
-      {/* Vista previa imprimible para el PDF */}
-      {alumnoSeleccionado && (
-        <div id="reporte-pdf" style={{ background: 'white', padding: '30px', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', marginTop: '20px' }}>
-          
-          <div style={{ background: '#1b365d', color: 'white', padding: '20px', borderRadius: '6px', marginBottom: '20px' }}>
-            <h1 style={{ margin: 0, fontSize: '1.5em' }}>REPORTE DE EVALUACIÓN TRIMESTRAL</h1>
-            <p style={{ margin: '5px 0 0 0', color: '#cbd5e1' }}>Sistema Integral de Control Escolar - Artística y Música</p>
-          </div>
+      {/* Controles de Selección (No salen en el PDF) */}
+      <div className="print:hidden flex flex-col md:flex-row gap-4 items-center justify-between bg-slate-50 p-4 rounded-lg border border-slate-200">
+        <div className="w-full md:w-1/2">
+          <label className="block text-sm font-semibold text-slate-700 mb-1">Seleccionar Grupo:</label>
+          <select 
+            className="w-full p-2.5 border border-slate-300 rounded-md bg-white text-slate-800 font-medium focus:ring-2 focus:ring-blue-500"
+            value={grupoSeleccionado}
+            onChange={(e) => {
+              setGrupoSeleccionado(e.target.value);
+              setAlumnoSeleccionado(null);
+            }}
+          >
+            <option value="">-- Seleccione un grupo --</option>
+            {grupos.map((g) => (
+              <option key={g.id} value={g.id}>{g.nombre}</option>
+            ))}
+          </select>
+        </div>
 
-          <div style={{ marginBottom: '20px', padding: '12px', background: '#f1f5f9', borderRadius: '4px' }}>
-            <p style={{ margin: '4px 0' }}><strong>Alumno(a):</strong> {alumnoSeleccionado.nombre_completo}</p>
-            <p style={{ margin: '4px 0' }}><strong>Ciclo Escolar:</strong> 2025-2026</p>
-          </div>
+        <div className="w-full md:w-1/2">
+          <label className="block text-sm font-semibold text-slate-700 mb-1">Seleccionar Alumno:</label>
+          <select 
+            className="w-full p-2.5 border border-slate-300 rounded-md bg-white text-slate-800 font-medium focus:ring-2 focus:ring-blue-500"
+            value={alumnoSeleccionado ? alumnoSeleccionado.id : ''}
+            onChange={(e) => {
+              const alumno = alumnos.find(a => a.id === e.target.value);
+              setAlumnoSeleccionado(alumno || null);
+            }}
+            disabled={!grupoSeleccionado || cargando}
+          >
+            <option value="">-- Seleccione un alumno --</option>
+            {alumnos.map((a) => (
+              <option key={a.id} value={a.id}>{a.apellido} {a.nombre}</option>
+            ))}
+          </select>
+        </div>
+      </div>
 
-          <h3>Desglose de Ponderación Oficial</h3>
-          <p style={{ fontSize: '0.95em', fontStyle: 'italic', color: '#475569' }}>
-            Fórmula aplicada en Base de Datos: (Asistencia × 0.10) + (Materiales × 0.10) + (Trabajos × 0.60) + (Examen × 0.20)
-          </p>
-
-          {cargando ? (
-            <p>Cargando calificaciones...</p>
-          ) : evaluacionData && evaluacionData.length > 0 ? (
-            evaluacionData.map((ev, index) => (
-              <div key={index} style={{ marginBottom: '30px', border: '1px solid #e2e8f0', padding: '15px', borderRadius: '6px' }}>
-                <h4 style={{ color: '#1b365d', marginTop: 0 }}>Trimestre {ev.periodos_evaluacion?.numero_periodo}</h4>
-                
-                <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '10px', fontSize: '0.95em' }}>
-                  <thead>
-                    <tr style={{ background: '#1b365d', color: 'white' }}>
-                      <th style={{ padding: '8px', textAlign: 'left' }}>Componente</th>
-                      <th style={{ padding: '8px', textAlign: 'center' }}>Ponderación</th>
-                      <th style={{ padding: '8px', textAlign: 'center' }}>Calificación</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>Asistencia y Puntualidad</td>
-                      <td style={{ padding: '8px', textAlign: 'center', borderBottom: '1px solid #eee' }}>10%</td>
-                      <td style={{ padding: '8px', textAlign: 'center', borderBottom: '1px solid #eee' }}>{ev.promedio_asistencia}</td>
-                    </tr>
-                    <tr>
-                      <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>Materiales (Flauta, Libretas)</td>
-                      <td style={{ padding: '8px', textAlign: 'center', borderBottom: '1px solid #eee' }}>10%</td>
-                      <td style={{ padding: '8px', textAlign: 'center', borderBottom: '1px solid #eee' }}>{ev.promedio_materiales}</td>
-                    </tr>
-                    <tr>
-                      <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>Trabajos y Actividades</td>
-                      <td style={{ padding: '8px', textAlign: 'center', borderBottom: '1px solid #eee' }}>60%</td>
-                      <td style={{ padding: '8px', textAlign: 'center', borderBottom: '1px solid #eee' }}>{ev.promedio_trabajos}</td>
-                    </tr>
-                    <tr>
-                      <td style={{ padding: '8px', borderBottom: '1px solid #eee' }}>Examen Parcial</td>
-                      <td style={{ padding: '8px', textAlign: 'center', borderBottom: '1px solid #eee' }}>20%</td>
-                      <td style={{ padding: '8px', textAlign: 'center', borderBottom: '1px solid #eee' }}>{ev.promedio_examen}</td>
-                    </tr>
-                  </tbody>
-                </table>
-
-                <div style={{ marginTop: '15px', background: '#e2e8f0', padding: '10px', borderRadius: '4px', textAlign: 'right', fontWeight: 'bold', color: '#1b365d' }}>
-                  CALIFICACIÓN FINAL DEL PERIODO: {ev.calificacion_final}
+      {/* Vista de Detalle del Alumno y sus Calificaciones */}
+      {alumnoSeleccionado ? (
+        <div className="space-y-6">
+          {/* Tarjeta de Información del Alumno */}
+          <div className="flex flex-col sm:flex-row items-center gap-6 bg-slate-50 p-6 rounded-xl border border-slate-200 shadow-sm">
+            <div className="relative">
+              {alumnoSeleccionado.foto_url ? (
+                <img 
+                  src={alumnoSeleccionado.foto_url} 
+                  alt={`Foto de ${alumnoSeleccionado.nombre}`} 
+                  className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-md"
+                />
+              ) : (
+                <div className="w-24 h-24 rounded-full bg-blue-600 text-white flex items-center justify-center text-2xl font-bold shadow-md border-4 border-white">
+                  {alumnoSeleccionado.nombre?.[0]}{alumnoSeleccionado.apellido?.[0]}
                 </div>
-              </div>
-            ))
-          ) : (
-            <p style={{ color: '#64748b', fontStyle: 'italic' }}>No hay evaluaciones registradas para este alumno todavía.</p>
-          )}
+              )}
+            </div>
 
-          {/* Botón de Descarga / Impresión PDF */}
-          <div style={{ textAlign: 'right', marginTop: '20px' }} className="no-print">
-            <button 
-              onClick={descargarPDF}
-              style={{ background: '#d4af37', color: '#1b365d', border: 'none', padding: '10px 20px', fontSize: '1em', fontWeight: 'bold', borderRadius: '4px', cursor: 'pointer' }}
-            >
-              🖨️ Descargar / Imprimir Reporte PDF
-            </button>
+            <div className="text-center sm:text-left flex-1">
+              <h2 className="text-xl font-bold text-slate-800">
+                {alumnoSeleccionado.apellido} {alumnoSeleccionado.nombre}
+              </h2>
+              <p className="text-sm text-slate-500 mt-0.5">Matrícula / ID: {alumnoSeleccionado.id.slice(0, 8)}</p>
+              <div className="mt-3 flex flex-wrap gap-2 justify-center sm:justify-start">
+                <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded-full">
+                  Fórmula: (Asistencia 10%) + (Materiales 10%) + (Trabajos 60%) + (Examen 20%)
+                </span>
+              </div>
+            </div>
+
+            <div className="print:hidden">
+              <button 
+                onClick={imprimirBoleta}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-5 py-2.5 rounded-lg shadow transition flex items-center gap-2 cursor-pointer"
+              >
+                🖨️ Descargar / Imprimir PDF
+              </button>
+            </div>
           </div>
 
+          {/* Tabla de Calificaciones Trimestrales */}
+          <div className="overflow-x-auto rounded-lg border border-slate-200 shadow-sm">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-800 text-white text-sm">
+                  <th className="p-3">Trimestre</th>
+                  <th className="p-3 text-center">Asistencia (10%)</th>
+                  <th className="p-3 text-center">Materiales (10%)</th>
+                  <th className="p-3 text-center">Trabajos (60%)</th>
+                  <th className="p-3 text-center">Examen (20%)</th>
+                  <th className="p-3 text-center bg-slate-900">Promedio Final</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200 text-sm">
+                {calificaciones.length > 0 ? (
+                  calificaciones.map((cal, idx) => (
+                    <tr key={idx} className="hover:bg-slate-50">
+                      <td className="p-3 font-semibold text-slate-700">Trimestre {cal.trimestre}</td>
+                      <td className="p-3 text-center text-slate-600">{cal.asistencia ?? '-'}</td>
+                      <td className="p-3 text-center text-slate-600">{cal.materiales ?? '-'}</td>
+                      <td className="p-3 text-center text-slate-600">{cal.trabajos ?? '-'}</td>
+                      <td className="p-3 text-center text-slate-600">{cal.examen ?? '-'}</td>
+                      <td className="p-3 text-center font-bold text-blue-700 bg-blue-50/50">
+                        {cal.promedio_final ? Number(cal.promedio_final).toFixed(1) : '-'}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="6" className="p-6 text-center text-slate-500 italic">
+                      No hay registros de calificaciones capturadas para este alumno.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Sección de Firmas para el PDF */}
+          <div className="hidden print:flex justify-between mt-20 pt-10 px-12 border-t border-slate-300 text-center text-sm text-slate-700">
+            <div>
+              <div className="w-48 border-b border-slate-400 mb-2"></div>
+              <p className="font-semibold">Firma del Docente</p>
+            </div>
+            <div>
+              <div className="w-48 border-b border-slate-400 mb-2"></div>
+              <p className="font-semibold">Firma del Padre o Tutor</p>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="text-center py-16 text-slate-400 border-2 border-dashed border-slate-200 rounded-xl">
+          <p className="text-lg">Selecciona un grupo y un alumno para visualizar su boleta de calificaciones.</p>
         </div>
       )}
     </div>
