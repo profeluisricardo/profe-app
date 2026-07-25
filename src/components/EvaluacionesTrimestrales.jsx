@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../supabaseClient'; // Ajusta la ruta a tu cliente de Supabase
+import { supabase } from './lib/supabase'; // Ajusta la ruta a tu cliente de Supabase
 
 export default function EvaluacionesTrimestrales() {
   const [alumnos, setAlumnos] = useState([]);
