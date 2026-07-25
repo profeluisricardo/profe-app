@@ -100,7 +100,7 @@ export default function EvaluacionesTrimestrales() {
   };
 
   return (
-    <div className="p-3 sm:p-6 max-w-7xl mx-auto bg-white dark:bg-slate-900 rounded-xl shadow-md space-y-4">
+    <div className="p-3 sm:p-6 max-w-5xl mx-auto bg-white dark:bg-slate-900 rounded-xl shadow-md space-y-4">
       {/* Encabezado Impresión PDF */}
       <div className="hidden print:block text-center mb-6">
         <h1 className="text-2xl font-bold text-slate-900">Escuela Secundaria - Reporte Escolar</h1>
@@ -108,7 +108,7 @@ export default function EvaluacionesTrimestrales() {
         <hr className="my-2 border-slate-300" />
       </div>
 
-      {/* CONTROLES MÓVIL / ESCRITORIO */}
+      {/* CONTROLES */}
       <div className="print:hidden flex flex-col gap-3 bg-slate-50 dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
         <div className="flex flex-col sm:flex-row gap-3 justify-between items-center">
           <button
@@ -174,7 +174,7 @@ export default function EvaluacionesTrimestrales() {
         </div>
       </div>
 
-      {/* VISTA 1: SEMÁFORO GENERAL CON TABLE-FIXED ESTRICTO */}
+      {/* VISTA 1: SEMÁFORO GENERAL RECONSTRUIDO CON GRID / FLEX (CERO DESBORDES) */}
       {vistaGeneral && !alumnoSeleccionado && (
         <div className="space-y-3">
           <div className="flex justify-between items-center px-1">
@@ -184,76 +184,79 @@ export default function EvaluacionesTrimestrales() {
             </span>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
-            <table className="w-full table-fixed text-left border-collapse text-xs sm:text-sm min-w-[750px]">
-              <thead>
-                <tr className="bg-slate-800 text-white">
-                  <th className="p-3 w-[26%]">Alumno</th>
-                  <th className="p-3 w-[12%]">Grupo</th>
-                  <th className="p-3 w-[16%] text-center">Asis / Faltas</th>
-                  <th className="p-3 w-[18%] text-center">Tareas (OK/Pend)</th>
-                  <th className="p-3 w-[12%] text-center">Prom</th>
-                  <th className="p-3 w-[16%] text-center bg-slate-900">Semáforo</th>
-                  <th className="p-3 w-[10%] text-center print:hidden">Acción</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-700 dark:bg-slate-800">
-                {resumenGlobal.length > 0 ? (
-                  resumenGlobal.map((item) => {
-                    const sem = obtenerSemaforo(item.promedioGeneral);
-                    return (
-                      <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
-                        <td className="p-3 font-semibold text-slate-800 dark:text-slate-100 truncate">
-                          <div className="flex items-center gap-2.5 overflow-hidden">
-                            {/* MINIATURA ESTRICTA 8x8 FIJA Y NO DEFORMABLE */}
-                            {item.foto_url ? (
-                              <img src={item.foto_url} alt="" className="w-8 h-8 rounded-full object-cover shrink-0 border border-slate-300 dark:border-slate-600" />
-                            ) : (
-                              <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
-                                {item.nombre?.[0]}{item.apellido?.[0]}
-                              </div>
-                            )}
-                            <span className="truncate">{item.apellido} {item.nombre}</span>
+          <div className="rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden bg-white dark:bg-slate-800">
+            {/* Cabecera Grid */}
+            <div className="grid grid-cols-12 bg-slate-800 text-white text-xs font-bold p-3 gap-2 items-center">
+              <div className="col-span-4 sm:col-span-4">Alumno</div>
+              <div className="col-span-2 sm:col-span-1 text-center">Grupo</div>
+              <div className="col-span-2 sm:col-span-2 text-center">Asis/Faltas</div>
+              <div className="hidden sm:block sm:col-span-2 text-center">Tareas</div>
+              <div className="col-span-2 sm:col-span-2 text-center">Semáforo</div>
+              <div className="col-span-2 sm:col-span-1 text-center print:hidden">Acción</div>
+            </div>
+
+            {/* Filas Grid */}
+            <div className="divide-y divide-slate-200 dark:divide-slate-700">
+              {resumenGlobal.length > 0 ? (
+                resumenGlobal.map((item) => {
+                  const sem = obtenerSemaforo(item.promedioGeneral);
+                  return (
+                    <div key={item.id} className="grid grid-cols-12 p-3 gap-2 items-center hover:bg-slate-50 dark:hover:bg-slate-700/50 text-xs sm:text-sm">
+                      {/* Alumno con miniatura estricta */}
+                      <div className="col-span-4 sm:col-span-4 flex items-center gap-2 overflow-hidden">
+                        {item.foto_url ? (
+                          <img src={item.foto_url} alt="" className="w-8 h-8 rounded-full object-cover shrink-0 border border-slate-300 dark:border-slate-600" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold shrink-0">
+                            {item.nombre?.[0]}{item.apellido?.[0]}
                           </div>
-                        </td>
-                        <td className="p-3 text-slate-600 dark:text-slate-300 font-medium truncate">{item.grupoNombre}</td>
-                        <td className="p-3 text-center text-xs whitespace-nowrap">
-                          <span className="text-emerald-600 font-bold">{item.asistencias}</span>/<span className="text-rose-600 font-bold">{item.faltas}</span>
-                        </td>
-                        <td className="p-3 text-center text-xs whitespace-nowrap">
-                          <span className="text-blue-600 font-bold">{item.entregadas}</span>/<span className="text-amber-600 font-bold">{item.porEntregar}</span>
-                        </td>
-                        <td className="p-3 text-center font-bold text-slate-700 dark:text-slate-200">
-                          {item.promedioGeneral > 0 ? item.promedioGeneral.toFixed(1) : 'N/D'}
-                        </td>
-                        <td className="p-3 text-center truncate">
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[11px] font-bold ${sem.color}`}>
-                            {sem.icon} {sem.texto}
-                          </span>
-                        </td>
-                        <td className="p-3 text-center print:hidden">
-                          <button
-                            onClick={() => {
-                              setAlumnoSeleccionado(item);
-                              setVistaGeneral(false);
-                            }}
-                            className="bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 px-2.5 py-1 rounded-md text-xs font-bold transition"
-                          >
-                            Ver
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })
-                ) : (
-                  <tr>
-                    <td colSpan="7" className="p-6 text-center text-slate-500 italic">
-                      Cargando alumnos...
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                        )}
+                        <span className="font-semibold text-slate-800 dark:text-slate-100 truncate">{item.apellido} {item.nombre}</span>
+                      </div>
+
+                      {/* Grupo */}
+                      <div className="col-span-2 sm:col-span-1 text-center text-slate-600 dark:text-slate-300 font-medium truncate">
+                        {item.grupoNombre}
+                      </div>
+
+                      {/* Asistencias / Faltas */}
+                      <div className="col-span-2 sm:col-span-2 text-center font-medium whitespace-nowrap">
+                        <span className="text-emerald-600 font-bold">{item.asistencias}</span>/<span className="text-rose-600 font-bold">{item.faltas}</span>
+                      </div>
+
+                      {/* Tareas (Oculto en móvil muy pequeño, visible en sm) */}
+                      <div className="hidden sm:block sm:col-span-2 text-center font-medium whitespace-nowrap">
+                        <span className="text-blue-600 font-bold">{item.entregadas}</span>/<span className="text-amber-600 font-bold">{item.porEntregar}</span>
+                      </div>
+
+                      {/* Semáforo */}
+                      <div className="col-span-2 sm:col-span-2 text-center flex justify-center">
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] sm:text-xs font-bold ${sem.color}`}>
+                          {sem.icon} <span className="hidden sm:inline">{sem.texto}</span>
+                        </span>
+                      </div>
+
+                      {/* Acción */}
+                      <div className="col-span-2 sm:col-span-1 text-center print:hidden">
+                        <button
+                          onClick={() => {
+                            setAlumnoSeleccionado(item);
+                            setVistaGeneral(false);
+                          }}
+                          className="bg-blue-50 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 hover:bg-blue-100 px-2.5 py-1 rounded-md text-xs font-bold transition"
+                        >
+                          Ver
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="p-6 text-center text-slate-500 italic">
+                  Cargando alumnos...
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -331,46 +334,40 @@ export default function EvaluacionesTrimestrales() {
             </div>
           </div>
 
-          <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
-            <table className="w-full text-left border-collapse text-xs sm:text-sm">
-              <thead>
-                <tr className="bg-slate-800 text-white">
-                  <th className="p-2.5">Trimestre</th>
-                  <th className="p-2.5 text-center">Asist (10%)</th>
-                  <th className="p-2.5 text-center">Mat (10%)</th>
-                  <th className="p-2.5 text-center">Trab (60%)</th>
-                  <th className="p-2.5 text-center">Exam (20%)</th>
-                  <th className="p-2.5 text-center bg-slate-900">Prom / Semáforo</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-700 dark:bg-slate-800">
-                {calificaciones.length > 0 ? (
-                  calificaciones.map((cal, idx) => {
-                    const sem = obtenerSemaforo(cal.promedio_final);
-                    return (
-                      <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
-                        <td className="p-2.5 font-semibold text-slate-700 dark:text-slate-200">Trimestre {cal.trimestre}</td>
-                        <td className="p-2.5 text-center dark:text-slate-300">{cal.asistencia ?? '-'}</td>
-                        <td className="p-2.5 text-center dark:text-slate-300">{cal.materiales ?? '-'}</td>
-                        <td className="p-2.5 text-center dark:text-slate-300">{cal.trabajos ?? '-'}</td>
-                        <td className="p-2.5 text-center dark:text-slate-300">{cal.examen ?? '-'}</td>
-                        <td className="p-2.5 text-center">
-                          <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[11px] font-bold ${sem.color}`}>
-                            {sem.icon} {cal.promedio_final ? Number(cal.promedio_final).toFixed(1) : 'N/D'}
-                          </span>
-                        </td>
-                      </tr>
-                    );
-                  })
-                ) : (
-                  <tr>
-                    <td colSpan="6" className="p-6 text-center text-slate-500 italic">
-                      Sin calificaciones capturadas.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+          <div className="rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden bg-white dark:bg-slate-800">
+            <div className="grid grid-cols-6 bg-slate-800 text-white text-xs font-bold p-3 text-center">
+              <div>Trimestre</div>
+              <div>Asist (10%)</div>
+              <div>Mat (10%)</div>
+              <div>Trab (60%)</div>
+              <div>Exam (20%)</div>
+              <div className="bg-slate-900">Prom / Semáforo</div>
+            </div>
+            <div className="divide-y divide-slate-200 dark:divide-slate-700">
+              {calificaciones.length > 0 ? (
+                calificaciones.map((cal, idx) => {
+                  const sem = obtenerSemaforo(cal.promedio_final);
+                  return (
+                    <div key={idx} className="grid grid-cols-6 p-3 text-xs sm:text-sm text-center items-center hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                      <div className="font-semibold text-slate-700 dark:text-slate-200 text-left">Trimestre {cal.trimestre}</div>
+                      <div className="dark:text-slate-300">{cal.asistencia ?? '-'}</div>
+                      <div className="dark:text-slate-300">{cal.materiales ?? '-'}</div>
+                      <div className="dark:text-slate-300">{cal.trabajos ?? '-'}</div>
+                      <div className="dark:text-slate-300">{cal.examen ?? '-'}</div>
+                      <div>
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[11px] font-bold ${sem.color}`}>
+                          {sem.icon} {cal.promedio_final ? Number(cal.promedio_final).toFixed(1) : 'N/D'}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="p-6 text-center text-slate-500 italic col-span-6">
+                  Sin calificaciones capturadas.
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Firmas para PDF */}
