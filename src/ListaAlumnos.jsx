@@ -68,12 +68,13 @@ export default function ListaAlumnos({ grupoSeleccionado, onCambiarGrupo, onVolv
       .from('alumnos')
       .select('*')
       .eq('grupo_id', grupoSeleccionado.id)
-      .order('nombre_completo')
+      .order('apellido_paterno', { ascending: true })
+      .order('apellido_materno', { ascending: true })
+      .order('nombre', { ascending: true })
 
     if (error) console.error('Error al cargar alumnos:', error)
     else setAlumnos(data || [])
   }
-
   const cargarAsistenciasDia = async (fecha) => {
     const alumnoIds = alumnos.map(a => a.id)
     if (alumnoIds.length === 0) return
@@ -205,7 +206,7 @@ export default function ListaAlumnos({ grupoSeleccionado, onCambiarGrupo, onVolv
       return alert('Por favor llena al menos el Apellido Paterno y el Nombre.')
     }
 
-    const nombreCompletoOficial = `${paterno.trim()} ${materno.trim()} ${nombres.trim()}`.replace(/\s+/g, ' ').toUpperCase()
+    
     const numeroConsecutivo = String(alumnos.length + 1).padStart(2, '0')
     const prefijoGrupo = grupoSeleccionado.nombre.replace(/[^0-9A-Z]/gi, '').toUpperCase()
     
@@ -217,7 +218,9 @@ export default function ListaAlumnos({ grupoSeleccionado, onCambiarGrupo, onVolv
       .from('alumnos')
       .insert([
         { 
-          nombre_completo: nombreCompletoOficial, 
+          apellido_paterno: paterno.trim().toUpperCase(),
+apellido_materno: materno.trim().toUpperCase(),
+nombre: nombres.trim().toUpperCase(),
           id_corto: idCortoAuto, 
           grupo_id: grupoSeleccionado.id,
           telefono: telefono.trim(),
@@ -253,16 +256,10 @@ export default function ListaAlumnos({ grupoSeleccionado, onCambiarGrupo, onVolv
       linea = linea.replace(/^\d+[\.\)]?\s*/, '').trim()
       if (!linea) continue
 
-      const nombreMayus = linea.toUpperCase().replace(/\s+/g, ' ')
-      const numeroStr = String(contadorActual + i).padStart(2, '0')
-      const prefijoGrupo = grupoSeleccionado.nombre.replace(/[^0-9A-Z]/gi, '').toUpperCase()
-      const idCortoAuto = `${prefijoGrupo}-${numeroStr}-PR`
-
-      nuevosAlumnosData.push({
-        nombre_completo: nombreMayus,
-        id_corto: idCortoAuto,
-        grupo_id: grupoSeleccionado.id
-      })
+    const partes = linea.trim().split(/\s+/)
+const apellidoPaterno = partes[0] || ''
+const apellidoMaterno = partes.length > 2 ? partes[1] : ''
+const nombre = partes.length > 2 ? partes.slice(2).join(' ') : (partes[1] || '')
     }
 
     if (nuevosAlumnosData.length === 0) return alert('No se encontraron nombres válidos para importar.')
@@ -1004,7 +1001,7 @@ export default function ListaAlumnos({ grupoSeleccionado, onCambiarGrupo, onVolv
                                   color: mat.libro_lenguajes ? 'white' : '#64748b'
                                 }}
                               >
-                                {mat.libro_lenguajes ? '📚 L. Lenguajes: SÍ' : '📚 L. Lenguajes: NO'}
+ {mat.libro_lenguajes ? '📚 L. Lenguajes: SÍ' : '📚 L. Lenguajes: NO'}
                               </button>
                             </div>
                           </td>
@@ -1084,7 +1081,7 @@ export default function ListaAlumnos({ grupoSeleccionado, onCambiarGrupo, onVolv
                       </td>
                       <td style={{ padding: '0.5rem' }}>
                         <div style={{ fontFamily: 'monospace', fontWeight: 'bold', color: '#2563eb', fontSize: '0.75rem' }}>{alumno.id_corto}</div>
-                        <div style={{ fontWeight: 'bold' }}>{alumno.nombre_completo}</div>
+                        <div style={{ fontWeight: 'bold' }}>{`${alumno.apellido_paterno} ${alumno.apellido_materno || ''} ${alumno.nombre}`.trim()}</div>
                         {alumno.telefono && <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Tel: {alumno.telefono}</div>}
                       </td>
                       <td style={{ padding: '0.5rem', fontSize: '0.8rem' }}>
@@ -1119,7 +1116,7 @@ export default function ListaAlumnos({ grupoSeleccionado, onCambiarGrupo, onVolv
       {alumnoSeleccionadoModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.75)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '1rem', boxSizing: 'border-box' }}>
           <div style={{ background: 'white', padding: '1.5rem', borderRadius: '12px', maxWidth: '380px', width: '100%', textAlign: 'center' }}>
-            <h3 style={{ margin: '0 0 0.2rem 0', fontSize: '1.1rem' }}>{alumnoSeleccionadoModal.nombre_completo}</h3>
+            <h3 style={{ margin: '0 0 0.2rem 0', fontSize: '1.1rem' }}>{`${alumnoSeleccionadoModal.apellido_paterno} ${alumnoSeleccionadoModal.apellido_materno || ''} ${alumnoSeleccionadoModal.nombre}`.trim()}</h3>
             <p style={{ margin: '0 0 0.8rem 0', fontFamily: 'monospace', fontWeight: 'bold', color: '#2563eb', fontSize: '0.85rem' }}>ID: {alumnoSeleccionadoModal.id_corto}</p>
 
             <div style={{ margin: '0 auto 1rem auto', width: '180px', height: '180px', borderRadius: '10px', overflow: 'hidden', border: '3px solid #e2e8f0' }}>
@@ -1158,5 +1155,5 @@ export default function ListaAlumnos({ grupoSeleccionado, onCambiarGrupo, onVolv
         </div>
       )}
     </div>
-  )
+  );
 }
