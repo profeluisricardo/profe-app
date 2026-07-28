@@ -69,14 +69,13 @@ export default function CapturaCalificaciones() {
     const { data: gruposData } = await supabase.from('grupos').select('*').order('nombre');
     if (gruposData) setGrupos(gruposData);
 
-    const { data: periodosData } = await supabase.from('periodos_evaluacion').select('*').order('numero_periodo');
+    const { data: periodosData } = await supabase.from('periodos').select('*').order('id');
     if (periodosData) setPeriodos(periodosData);
 
     // Intentar cargar ponderaciones desde la configuración de criterios si existe la tabla
     try {
       const { data: criteriosData } = await supabase.from('configuracion_criterios').select('*');
       if (criteriosData && criteriosData.length > 0) {
-        // Mapeamos los porcentajes (asumiendo que están guardados como 0-100 o 0-1)
         const nuevosPesos = { ...pesos };
         criteriosData.forEach(c => {
           const nombre = c.nombre?.toLowerCase() || c.rubro?.toLowerCase();
@@ -89,7 +88,6 @@ export default function CapturaCalificaciones() {
         setPesos(nuevosPesos);
       }
     } catch (e) {
-      // Si la tabla usa otro nombre o esquema, mantenemos los valores por defecto
       console.log('Usando ponderaciones estándar.');
     }
   };
@@ -325,7 +323,9 @@ export default function CapturaCalificaciones() {
             >
               <option value="">-- Elige un periodo --</option>
               {periodos.map((p) => (
-                <option key={p.id} value={p.id}>Periodo {p.numero_periodo} {p.descripcion ? `- ${p.descripcion}` : ''}</option>
+                <option key={p.id} value={p.id}>
+                  {p.nombre}
+                </option>
               ))}
             </select>
           </div>
