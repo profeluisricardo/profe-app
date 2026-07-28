@@ -3,6 +3,7 @@ import { supabase } from './lib/supabase'
 import ListaAlumnos from './ListaAlumnos'
 import EvaluacionesTrimestrales from './components/EvaluacionesTrimestrales'
 import CapturaCalificaciones from './components/CapturaCalificaciones'
+import ConfiguracionCriterios from './components/ConfiguracionCriterios'
 
 export default function App() {
   const [grupos, setGrupos] = useState([])
@@ -17,9 +18,10 @@ export default function App() {
     }
   })
 
-  // Estados para el modal de Crear Grupo o Tutoría
+  // Estados para modales
   const [modalGrupoAbierto, setModalGrupoAbierto] = useState(false)
   const [nombreGrupoInput, setNombreGrupoInput] = useState('')
+  const [modalCriteriosAbierto, setModalCriteriosAbierto] = useState(false)
 
   useEffect(() => {
     if (grupoSeleccionado) {
@@ -44,13 +46,7 @@ export default function App() {
       })
 
       const paletaColores = [
-        '#059669', // Verde esmeralda
-        '#7c3aed', // Púrpura
-        '#d97706', // Naranja / Ámbar
-        '#db2777', // Rosa / Fucsia
-        '#0d9488', // Verde azulado
-        '#4f46e5', // Índigo
-        '#dc2626'  // Rojo
+        '#059669', '#7c3aed', '#d97706', '#db2777', '#0d9488', '#4f46e5', '#dc2626'
       ]
 
       let colorIndex = 0
@@ -69,10 +65,7 @@ export default function App() {
           colorIndex++
         }
         
-        return {
-          ...grupo,
-          colorFondo: color
-        }
+        return { ...grupo, colorFondo: color }
       })
 
       setGrupos(gruposConColor)
@@ -167,31 +160,14 @@ export default function App() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <button 
             onClick={volverAlMenu}
-            style={{
-              background: '#334155',
-              color: 'white',
-              border: 'none',
-              padding: '0.5rem 1rem',
-              borderRadius: '6px',
-              fontWeight: 'bold',
-              cursor: 'pointer'
-            }}
+            style={{ background: '#334155', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}
           >
             ← Menú Principal
           </button>
           <h2 style={{ margin: 0, color: '#1e293b' }}>{nombreGrado}</h2>
           <button
             onClick={() => setModalGrupoAbierto(true)}
-            style={{
-              background: '#059669',
-              color: 'white',
-              border: 'none',
-              padding: '0.5rem 0.75rem',
-              borderRadius: '6px',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              fontSize: '0.9rem'
-            }}
+            style={{ background: '#059669', color: 'white', border: 'none', padding: '0.5rem 0.75rem', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.9rem' }}
           >
             ➕ Nuevo
           </button>
@@ -278,15 +254,7 @@ export default function App() {
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
           <button 
             onClick={volverAlMenu}
-            style={{
-              background: '#1b365d',
-              color: 'white',
-              border: 'none',
-              padding: '0.5rem 1rem',
-              borderRadius: '6px',
-              fontWeight: 'bold',
-              cursor: 'pointer'
-            }}
+            style={{ background: '#1b365d', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}
           >
             ← Menú Principal
           </button>
@@ -303,15 +271,7 @@ export default function App() {
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
           <button 
             onClick={volverAlMenu}
-            style={{
-              background: '#1b365d',
-              color: 'white',
-              border: 'none',
-              padding: '0.5rem 1rem',
-              borderRadius: '6px',
-              fontWeight: 'bold',
-              cursor: 'pointer'
-            }}
+            style={{ background: '#1b365d', color: 'white', border: 'none', padding: '0.5rem 1rem', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}
           >
             ← Menú Principal
           </button>
@@ -345,6 +305,24 @@ export default function App() {
           📊 Evaluaciones y Boletas
         </button>
 
+        {/* Botón añadido para abrir la Configuración de Criterios directamente */}
+        <button
+          onClick={() => setModalCriteriosAbierto(true)}
+          style={{
+            padding: '0.75rem 1.25rem',
+            fontSize: '0.95rem',
+            fontWeight: 'bold',
+            background: '#475569',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+          }}
+        >
+          ⚙️ Configurar Criterios Evaluativos
+        </button>
+
         <button
           onClick={() => setVistaActual('captura')}
           style={{
@@ -370,53 +348,30 @@ export default function App() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(1, 1fr)', gap: '1rem', marginTop: '1rem', maxWidth: '400px', marginInline: 'auto' }}>
         <button
           onClick={() => seleccionarGrado(1)}
-          style={{
-            padding: '1.25rem',
-            fontSize: '1.1rem',
-            fontWeight: 'bold',
-            background: '#2563eb',
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-          }}
+          style={{ padding: '1.25rem', fontSize: '1.1rem', fontWeight: 'bold', background: '#2563eb', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
         >
           1er Grado
         </button>
         <button
           onClick={() => seleccionarGrado(2)}
-          style={{
-            padding: '1.25rem',
-            fontSize: '1.1rem',
-            fontWeight: 'bold',
-            background: '#059669',
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-          }}
+          style={{ padding: '1.25rem', fontSize: '1.1rem', fontWeight: 'bold', background: '#059669', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
         >
           2do Grado
         </button>
         <button
           onClick={() => seleccionarGrado(3)}
-          style={{
-            padding: '1.25rem',
-            fontSize: '1.1rem',
-            fontWeight: 'bold',
-            background: '#7c3aed',
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-          }}
+          style={{ padding: '1.25rem', fontSize: '1.1rem', fontWeight: 'bold', background: '#7c3aed', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
         >
           3er Grado
         </button>
       </div>
+
+      {/* Modal flotante para Configuración de Criterios */}
+      {modalCriteriosAbierto && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', zIndex: 100 }}>
+          <ConfiguracionCriterios alCerrar={() => setModalCriteriosAbierto(false)} />
+        </div>
+      )}
     </div>
   )
 }
